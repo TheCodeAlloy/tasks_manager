@@ -106,9 +106,7 @@ const PC = {h:'#ef4444',m:'#f59e0b',l:'#22c55e'};
 const pc = p => p>=8?'h':p>=4?'m':'l';
 
 let state = {
-  screen: 'pin', // pin | setup | list | add | detail
-  pin: localStorage.getItem('app_pin') || '',
-  pinVerified: false,
+  screen: 'list',
   tasks: [], projects: [], kb: [],
   loading: false, syncing: false, errMsg: '',
   // list
@@ -132,12 +130,12 @@ const isWeek=iso=>{if(!iso)return false;const d=new Date(iso),n=new Date(),e=new
 
 // ── API ──────────────────────────────────────────────────────
 async function api(action, body={}) {
-  const url = API_URL + '?action=' + action + '&pin=' + encodeURIComponent(state.pin);
+  const url = API_URL + '?action=' + action;
   try {
     const res = await fetch(url, {
       method: body && Object.keys(body).length ? 'POST' : 'GET',
       headers: {'Content-Type':'application/json'},
-      body: Object.keys(body).length ? JSON.stringify({...body, action, pin: state.pin}) : undefined,
+      body: Object.keys(body).length ? JSON.stringify({...body, action}) : undefined,
       redirect: 'follow'
     });
     return await res.json();
@@ -147,22 +145,7 @@ async function api(action, body={}) {
 }
 
 // ── PIN ──────────────────────────────────────────────────────
-async function verifyPin() {
-  const pin = document.getElementById('pinInput')?.value;
-  if (!pin) return;
-  state.loading = true; state.errMsg = ''; render();
-  const r = await api('checkPin', {pin});
-  state.loading = false;
-  if (r.ok) {
-    state.pin = pin;
-    state.pinVerified = true;
-    localStorage.setItem('app_pin', pin);
-    await loadAll();
-  } else {
-    state.errMsg = 'Nesprávný PIN';
-    render();
-  }
-}
+
 
 // ── LOAD ─────────────────────────────────────────────────────
 async function loadAll() {
@@ -340,27 +323,13 @@ function render() {
   const app = document.getElementById('app');
   const s = state;
 
-  if (s.screen === 'pin') { app.innerHTML = renderPin(); return; }
   if (s.loading) { app.innerHTML = `<div class="loader"><div style="font-size:32px;margin-bottom:12px">⏳</div>Načítám...</div>`; return; }
   if (s.screen === 'list') { app.innerHTML = renderList(); return; }
   if (s.screen === 'add') { app.innerHTML = renderAdd(); return; }
   if (s.screen === 'detail') { app.innerHTML = renderDetail(); return; }
 }
 
-function renderPin() {
-  return `<div class="pin-screen">
-    <div style="font-size:48px;margin-bottom:16px">📋</div>
-    <div class="pin-title">Správce úkolů</div>
-    <div class="pin-sub">Zadej PIN pro přístup</div>
-    <input id="pinInput" type="password" class="pin-input" placeholder="••••" maxlength="10" onkeydown="if(event.key==='Enter')verifyPin()">
-    ${state.errMsg?`<div class="err" style="margin-bottom:12px">${esc(state.errMsg)}</div>`:''}
-    <button class="pin-btn" onclick="verifyPin()">Vstoupit</button>
-    <div style="margin-top:40px;font-size:12px;color:#222">
-      <div style="margin-bottom:8px;color:#333">Poprvé? Nastav nejdřív tabulku:</div>
-      <button onclick="runSetup()" style="background:#1a1a2e;border:1px solid #3a3a6e;color:#666;border-radius:8px;padding:8px 16px;font-size:12px">⚙️ Inicializovat tabulku</button>
-    </div>
-  </div>`;
-}
+
 
 function renderList() {
   const list = filtered();
@@ -524,7 +493,7 @@ if (API_URL === 'VLOZ_SEM_URL_APPS_SCRIPTU') {
     </div>
   </div>`;
 } else {
-  render();
+  loadAll();
 }
 </script>
 </body>
