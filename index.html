@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Správce úkolů</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:#0a0a0f;color:#f0f0f5;font-family:system-ui,sans-serif;max-width:500px;margin:0 auto;padding-bottom:90px;min-height:100vh;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+/* ── LAYOUT ── */
+.hdr{padding:18px 16px 12px;border-bottom:1px solid #1e1e2e;position:sticky;top:0;background:#0a0a0f;z-index:10;}
+.hdr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.lbl{font-size:10px;color:#444;letter-spacing:2px;text-transform:uppercase;margin-bottom:2px;}
+.stat{font-size:18px;font-weight:700;}
+.tabs{display:flex;gap:6px;margin-bottom:7px;}
+.tab{flex:1;padding:7px 0;border-radius:9px;font-size:13px;font-weight:600;border:1px solid #1e1e2e;background:transparent;color:#555;}
+.tab.on{background:#1e1e3f;border-color:#3a3a6e;color:#a0a0ff;}
+.ftabs{display:flex;gap:6px;}
+.ftab{flex:1;padding:5px 0;border-radius:7px;font-size:12px;border:none;background:transparent;color:#444;}
+.ftab.on{background:#1a1a1a;color:#ddd;}
+.btn-done{background:#111;border:1px solid #2a2a3e;color:#555;border-radius:20px;padding:5px 12px;font-size:11px;}
+.btn-done.on{background:#1e2a1e;color:#22c55e;}
+.content{padding:12px 16px 0;}
+.empty{text-align:center;padding:50px 0;color:#2a2a3a;}
+/* ── TASK CARD ── */
+.task-card{border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer;}
+.task-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.task-proj{font-size:11px;color:#444;margin-bottom:2px;}
+.task-title{font-size:15px;font-weight:600;margin-bottom:6px;}
+.task-tags{display:flex;gap:6px;flex-wrap:wrap;}
+.tag{font-size:11px;border-radius:5px;padding:2px 7px;font-weight:600;}
+.chk{width:28px;height:28px;border-radius:50%;border:2px solid #333;background:transparent;color:#22c55e;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:10px;}
+.chk.on{border-color:#22c55e;background:rgba(34,197,94,.13);}
+.fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#2a2a6e,#3a3aae);border:none;color:#fff;font-size:28px;box-shadow:0 4px 20px rgba(100,100,220,.4);display:flex;align-items:center;justify-content:center;z-index:20;}
+/* ── SCREEN ── */
+.screen{min-height:100vh;background:#0a0a0f;padding:20px 16px 80px;max-width:500px;margin:0 auto;}
+.back-row{display:flex;align-items:center;gap:12px;margin-bottom:22px;}
+.back{background:none;border:none;color:#666;font-size:22px;}
+.screen-title{font-size:18px;font-weight:700;}
+/* ── FORMS ── */
+.inp{width:100%;background:#111;border:1px solid #2a2a2a;border-radius:8px;padding:9px 11px;color:#f0f0f5;font-size:14px;font-family:inherit;}
+.inp.big{font-size:15px;font-weight:600;}
+.inp.muted{color:#aaa;}
+.inp:focus{outline:none;border-color:#4a4a8e;}
+.fld{margin-bottom:10px;}
+.fld-lbl{font-size:10px;color:#555;margin-bottom:4px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.fl{display:flex;gap:10px;}
+.btn{padding:11px 0;border-radius:10px;font-size:14px;font-weight:600;width:100%;border:1px solid;}
+.btn-cancel{background:transparent;border-color:#333;color:#666;}
+.btn-save{background:linear-gradient(135deg,#1a3a1a,#2a5a2a);border-color:#3a7a3a;color:#4ade80;}
+.btn-analyze{width:100%;padding:12px 0;background:#2a2a6e;border:1px solid #3a3a8e;border-radius:10px;color:#a0a0ff;font-size:14px;font-weight:600;margin-top:10px;}
+.btn-manual{width:100%;padding:11px 0;background:transparent;border:1px solid #222;border-radius:10px;color:#444;font-size:14px;margin-top:8px;}
+.sep{border-top:1px solid #1e1e2e;margin:16px 0;}
+/* ── VOICE BOX ── */
+.voice-box{background:#111;border:1px solid #2a2a4a;border-radius:14px;padding:16px;margin-bottom:16px;}
+.voice-box-title{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;}
+.voice-textarea{width:100%;background:#0d0d1a;border:1px solid #2a2a3e;border-radius:10px;padding:12px;color:#f0f0f5;font-size:15px;font-family:inherit;resize:none;line-height:1.5;min-height:100px;}
+.voice-textarea:focus{outline:none;border-color:#4a4a8e;}
+.voice-hint{font-size:11px;color:#333;margin-top:8px;line-height:1.8;}
+.voice-hint b{color:#555;}
+/* ── STATUS & DETAIL ── */
+.status-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;}
+.status-btn{padding:7px 12px;border-radius:20px;font-size:12px;border:1px solid #222;background:transparent;color:#555;}
+.status-btn.on{background:#1e1e3f;border-color:#3a3a6e;color:#a0a0ff;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;}
+.detail-cell{background:#111;border:1px solid #1e1e2e;border-radius:10px;padding:12px;}
+.detail-cell-lbl{font-size:10px;color:#444;margin-bottom:4px;text-transform:uppercase;}
+.vedit-box{background:#0d0d1a;border:1px solid #1e1e3f;border-radius:12px;padding:14px;}
+/* ── DUP BOX ── */
+.dup-box{background:#1a1a0a;border:1px solid #5a5a1a;border-radius:12px;padding:14px;margin-bottom:16px;}
+.dup-item{background:#111;border-radius:8px;padding:10px;margin-bottom:8px;}
+/* ── PIN ── */
+.pin-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 20px;}
+.pin-title{font-size:24px;font-weight:700;margin-bottom:8px;}
+.pin-sub{font-size:13px;color:#444;margin-bottom:32px;}
+.pin-input{background:#111;border:2px solid #2a2a4a;border-radius:12px;padding:16px;color:#f0f0f5;font-size:24px;text-align:center;width:180px;letter-spacing:8px;margin-bottom:16px;}
+.pin-input:focus{outline:none;border-color:#4a4a8e;}
+.pin-btn{padding:12px 40px;background:linear-gradient(135deg,#2a2a6e,#3a3aae);border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:600;}
+/* ── SETUP ── */
+.setup-box{background:#111;border:1px solid #2a3a2a;border-radius:14px;padding:20px;margin:20px 0;}
+/* ── LOADER ── */
+.loader{text-align:center;padding:40px;color:#444;font-size:13px;}
+/* ── ERR ── */
+.err{background:#1f0a0a;border:1px solid #5a1a1a;border-radius:10px;padding:12px;margin:12px 0;font-size:13px;color:#f87171;}
+.ai-lbl{font-size:11px;color:#22c55e;letter-spacing:1px;margin-bottom:14px;}
+.sync-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#22c55e;margin-right:6px;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+</style>
+</head>
+<body>
+<div id="app"><div class="loader">⏳ Načítám...</div></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// KONFIGURACE — po nasazení Apps Scriptu sem vlož URL
+// ══════════════════════════════════════════════════════════════
+const API_URL = 'VLOZ_SEM_URL_APPS_SCRIPTU';
+// ══════════════════════════════════════════════════════════════
+
+const STATUS = {todo:'📋 Čeká',inprogress:'🔄 Rozpracováno',waiting:'⏳ Čekám',done:'✅ Hotovo'};
+const SK = ['todo','inprogress','waiting','done'];
+const PC = {h:'#ef4444',m:'#f59e0b',l:'#22c55e'};
+const pc = p => p>=8?'h':p>=4?'m':'l';
+
+let state = {
+  screen: 'pin', // pin | setup | list | add | detail
+  pin: localStorage.getItem('app_pin') || '',
+  pinVerified: false,
+  tasks: [], projects: [], kb: [],
+  loading: false, syncing: false, errMsg: '',
+  // list
+  tf: 'all', yf: 'all', showDone: false,
+  // add
+  voiceText: '', draft: null, dups: [], manual: false, parsing: false,
+  // detail
+  sel: null, editMode: false, voiceEditText: '',
+};
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function fmt(iso){
+  if(!iso)return null;
+  const d=new Date(iso),diff=Math.round((d-new Date())/86400000);
+  if(diff===0)return'Dnes';if(diff===1)return'Zítra';if(diff<0)return`Před ${-diff}d`;
+  return d.toLocaleDateString('cs-CZ',{day:'numeric',month:'short'});
+}
+const isToday=iso=>iso&&new Date(iso).toDateString()===new Date().toDateString();
+const isWeek=iso=>{if(!iso)return false;const d=new Date(iso),n=new Date(),e=new Date();e.setDate(n.getDate()+7);return d>=n&&d<=e;};
+
+// ── API ──────────────────────────────────────────────────────
+async function api(action, body={}) {
+  const url = API_URL + '?action=' + action + '&pin=' + encodeURIComponent(state.pin);
+  try {
+    const res = await fetch(url, {
+      method: body && Object.keys(body).length ? 'POST' : 'GET',
+      headers: {'Content-Type':'application/json'},
+      body: Object.keys(body).length ? JSON.stringify({...body, action, pin: state.pin}) : undefined,
+      redirect: 'follow'
+    });
+    return await res.json();
+  } catch(e) {
+    return {ok:false, error: e.message};
+  }
+}
+
+// ── PIN ──────────────────────────────────────────────────────
+async function verifyPin() {
+  const pin = document.getElementById('pinInput')?.value;
+  if (!pin) return;
+  state.loading = true; state.errMsg = ''; render();
+  const r = await api('checkPin', {pin});
+  state.loading = false;
+  if (r.ok) {
+    state.pin = pin;
+    state.pinVerified = true;
+    localStorage.setItem('app_pin', pin);
+    await loadAll();
+  } else {
+    state.errMsg = 'Nesprávný PIN';
+    render();
+  }
+}
+
+// ── LOAD ─────────────────────────────────────────────────────
+async function loadAll() {
+  state.loading = true; state.screen = 'list'; render();
+  const [tr, pr, kr] = await Promise.all([api('getTasks'), api('getProjects'), api('getKb')]);
+  if (tr.ok) state.tasks = tr.tasks || [];
+  if (pr.ok) state.projects = pr.projects || [];
+  if (kr.ok) state.kb = kr.kb || [];
+  state.loading = false;
+  render();
+}
+
+async function runSetup() {
+  state.loading = true; render();
+  const r = await api('setup');
+  state.loading = false;
+  if (r.ok) { alert('✅ ' + r.message); await loadAll(); }
+  else { state.errMsg = r.error; render(); }
+}
+
+// ── TASK OPS ─────────────────────────────────────────────────
+async function analyze() {
+  const text = state.voiceText.trim();
+  if (!text) { state.errMsg = 'Nejdřív napiš nebo nadiktuj úkol.'; render(); return; }
+  state.parsing = true; state.errMsg = ''; render();
+  const r = await api('analyze', {
+    text,
+    existingTasks: state.tasks.slice(0,40),
+    projects: state.projects,
+    kb: state.kb.slice(0,30)
+  });
+  state.parsing = false;
+  if (r.ok) {
+    const p = r.task;
+    state.dups = (p.duplicateIds||[]).map(id=>state.tasks.find(t=>String(t.id)===String(id))).filter(Boolean);
+    state.draft = {...p, duplicateIds: undefined, knowledgeEntry: undefined};
+  } else {
+    state.errMsg = r.error;
+  }
+  render();
+}
+
+async function confirmSave(overrideId=null) {
+  state.loading = true; render();
+  let r;
+  if (overrideId) {
+    r = await api('updateTask', {task: {...state.draft, id: overrideId}});
+  } else {
+    r = await api('addTask', {task: state.draft});
+    if (r.ok && state.draft.title && state.draft.project) {
+      await api('addKnowledge', {entry: {input: state.draft.title.substring(0,60), project: state.draft.project, type: state.draft.type, priority: state.draft.priority}});
+    }
+  }
+  if (r.ok) {
+    await loadAll();
+    state.draft = null; state.dups = []; state.voiceText = ''; state.manual = false; state.screen = 'list';
+  } else { state.errMsg = r.error; }
+  state.loading = false; render();
+}
+
+async function saveEdit() {
+  state.loading = true; render();
+  const r = await api('updateTask', {task: state.draft});
+  if (r.ok) { await loadAll(); state.editMode = false; state.draft = null; }
+  else { state.errMsg = r.error; }
+  state.loading = false; render();
+}
+
+async function toggleStatus(id, e) {
+  if(e) e.stopPropagation();
+  const next = {todo:'inprogress',inprogress:'waiting',waiting:'done',done:'todo'};
+  const task = state.tasks.find(t=>String(t.id)===String(id));
+  if (!task) return;
+  const updated = {...task, status: next[task.status]||'todo'};
+  state.tasks = state.tasks.map(t=>String(t.id)===String(id)?updated:t);
+  render();
+  await api('updateTask', {task: updated});
+}
+
+async function setStatus(id, s) {
+  const task = state.tasks.find(t=>String(t.id)===String(id));
+  if (!task) return;
+  const updated = {...task, status: s};
+  state.tasks = state.tasks.map(t=>String(t.id)===String(id)?updated:t);
+  render();
+  await api('updateTask', {task: updated});
+}
+
+async function delTask(id) {
+  if (!confirm('Smazat úkol?')) return;
+  state.loading = true; render();
+  await api('deleteTask', {id});
+  await loadAll();
+  state.screen = 'list';
+  state.loading = false; render();
+}
+
+async function analyzeEdit(taskId) {
+  const cmd = state.voiceEditText.trim();
+  if (!cmd) { state.errMsg = 'Nejdřív napiš příkaz.'; render(); return; }
+  const task = state.tasks.find(t=>String(t.id)===String(taskId));
+  if (!task) return;
+  state.parsing = true; state.errMsg = ''; render();
+  const r = await api('analyzeEdit', {task, command: cmd});
+  state.parsing = false;
+  if (r.ok) {
+    const updated = {...task, ...r.task, id: task.id};
+    await api('updateTask', {task: updated});
+    state.voiceEditText = '';
+    await loadAll();
+    state.sel = task.id;
+  } else { state.errMsg = r.error; }
+  render();
+}
+
+function edDraft(f,v){ state.draft = {...state.draft,[f]:v}; render(); }
+function openManual(){ state.manual=true; state.draft={title:'',detail:'',project:'',type:'mine',priority:5,status:'todo',dueDate:'',deadline:'',reminderDate:'',estimatedHours:'',assignee:''}; render(); }
+
+// ── FILTER ───────────────────────────────────────────────────
+function filtered() {
+  return state.tasks.filter(t=>{
+    if(!state.showDone&&t.status==='done') return false;
+    if(state.yf==='mine'&&t.type!=='mine') return false;
+    if(state.yf==='watch'&&t.type!=='watch') return false;
+    if(state.tf==='today'&&!isToday(t.dueDate)&&!isToday(t.deadline)) return false;
+    if(state.tf==='week'&&!isWeek(t.dueDate)&&!isWeek(t.deadline)) return false;
+    return true;
+  }).sort((a,b)=>{
+    if(a.status==='done'&&b.status!=='done') return 1;
+    if(a.status!=='done'&&b.status==='done') return -1;
+    return b.priority-a.priority;
+  });
+}
+
+// ── FORM ─────────────────────────────────────────────────────
+function formHTML(saveLabel, cancelAction) {
+  if(!state.draft) return '';
+  const d = state.draft;
+  return `
+  <div class="fld"><div class="fld-lbl">NÁZEV</div><input class="inp big" value="${esc(d.title)}" oninput="edDraft('title',this.value)"></div>
+  <div class="fld"><div class="fld-lbl">PROJEKT</div>
+    <input class="inp" value="${esc(d.project)}" list="proj-list" placeholder="Název projektu..." oninput="edDraft('project',this.value)">
+    <datalist id="proj-list">${state.projects.map(p=>`<option value="${esc(p.name)}">`).join('')}</datalist>
+  </div>
+  <div class="fld"><div class="fld-lbl">DETAIL</div><textarea class="inp muted" rows="2" oninput="edDraft('detail',this.value)">${esc(d.detail||'')}</textarea></div>
+  <div class="grid2">
+    <div><div class="fld-lbl">TYP</div><select class="inp" onchange="edDraft('type',this.value)">
+      <option value="mine"${d.type==='mine'?' selected':''}>🔵 Udělám sám</option>
+      <option value="watch"${d.type==='watch'?' selected':''}>🟡 Hlídám</option>
+    </select></div>
+    <div><div class="fld-lbl">STAV</div><select class="inp" onchange="edDraft('status',this.value)">
+      ${SK.map(k=>`<option value="${k}"${d.status===k?' selected':''}>${STATUS[k]}</option>`).join('')}
+    </select></div>
+  </div>
+  ${d.type==='watch'?`<div class="fld"><div class="fld-lbl">KDO TO DĚLÁ</div><input class="inp" value="${esc(d.assignee||'')}" oninput="edDraft('assignee',this.value)"></div>`:''}
+  <div class="fld"><div class="fld-lbl">PRIORITA: ${d.priority||5}/10</div>
+    <input type="range" min="1" max="10" value="${d.priority||5}" style="width:100%;accent-color:${PC[pc(d.priority||5)]}" oninput="edDraft('priority',+this.value)">
+  </div>
+  <div class="grid2">
+    <div><div class="fld-lbl">TERMÍN</div><input type="date" class="inp" value="${d.dueDate||''}" oninput="edDraft('dueDate',this.value)"></div>
+    <div><div class="fld-lbl">DEADLINE</div><input type="date" class="inp" value="${d.deadline||''}" oninput="edDraft('deadline',this.value)"></div>
+  </div>
+  <div class="grid2" style="margin-bottom:16px">
+    <div><div class="fld-lbl">PŘIPOMENUTÍ</div><input type="date" class="inp" value="${d.reminderDate||''}" oninput="edDraft('reminderDate',this.value)"></div>
+    <div><div class="fld-lbl">ODH. ČAS (h)</div><input type="number" class="inp" min="0" step="0.5" value="${d.estimatedHours||''}" oninput="edDraft('estimatedHours',this.value)"></div>
+  </div>
+  <div class="fl">
+    <button class="btn btn-cancel" style="flex:1" onclick="${cancelAction}">Zrušit</button>
+    <button class="btn btn-save" style="flex:2" onclick="${saveLabel==='✓ Uložit změny'?'saveEdit()':'confirmSave()'}">${saveLabel}</button>
+  </div>`;
+}
+
+// ── RENDER ───────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app');
+  const s = state;
+
+  if (s.screen === 'pin') { app.innerHTML = renderPin(); return; }
+  if (s.loading) { app.innerHTML = `<div class="loader"><div style="font-size:32px;margin-bottom:12px">⏳</div>Načítám...</div>`; return; }
+  if (s.screen === 'list') { app.innerHTML = renderList(); return; }
+  if (s.screen === 'add') { app.innerHTML = renderAdd(); return; }
+  if (s.screen === 'detail') { app.innerHTML = renderDetail(); return; }
+}
+
+function renderPin() {
+  return `<div class="pin-screen">
+    <div style="font-size:48px;margin-bottom:16px">📋</div>
+    <div class="pin-title">Správce úkolů</div>
+    <div class="pin-sub">Zadej PIN pro přístup</div>
+    <input id="pinInput" type="password" class="pin-input" placeholder="••••" maxlength="10" onkeydown="if(event.key==='Enter')verifyPin()">
+    ${state.errMsg?`<div class="err" style="margin-bottom:12px">${esc(state.errMsg)}</div>`:''}
+    <button class="pin-btn" onclick="verifyPin()">Vstoupit</button>
+    <div style="margin-top:40px;font-size:12px;color:#222">
+      <div style="margin-bottom:8px;color:#333">Poprvé? Nastav nejdřív tabulku:</div>
+      <button onclick="runSetup()" style="background:#1a1a2e;border:1px solid #3a3a6e;color:#666;border-radius:8px;padding:8px 16px;font-size:12px">⚙️ Inicializovat tabulku</button>
+    </div>
+  </div>`;
+}
+
+function renderList() {
+  const list = filtered();
+  const todayN = state.tasks.filter(t=>t.status!=='done'&&(isToday(t.dueDate)||isToday(t.deadline))).length;
+  const activeN = state.tasks.filter(t=>t.status!=='done').length;
+
+  const cards = list.length === 0
+    ? `<div class="empty"><div style="font-size:36px;margin-bottom:10px">📋</div><div style="color:#444">Žádné úkoly</div><div style="font-size:12px;color:#222;margin-top:4px">Ťukni + pro přidání</div></div>`
+    : list.map(t => {
+        const col = PC[pc(t.priority)];
+        const overdue = (t.deadline&&new Date(t.deadline)<new Date()&&t.status!=='done') || (t.dueDate&&new Date(t.dueDate)<new Date()&&!isToday(t.dueDate)&&t.status!=='done');
+        const date = t.deadline || t.dueDate;
+        return `<div class="task-card" style="background:${t.status==='done'?'#0d0d0d':'#111118'};border:1px solid ${overdue?'#5a1a1a':'#1e1e2e'};border-left:3px solid ${t.status==='done'?'#222':col};opacity:${t.status==='done'?.45:1}" onclick="openDetail('${t.id}')">
+          <div class="task-top">
+            <div style="flex:1;min-width:0">
+              ${t.project?`<div class="task-proj">${esc(t.project)}</div>`:''}
+              <div class="task-title" style="color:${t.status==='done'?'#444':'#f0f0f5'};text-decoration:${t.status==='done'?'line-through':'none'}">${t.type==='mine'?'🔵':'🟡'} ${esc(t.title)}</div>
+              <div class="task-tags">
+                <span class="tag" style="color:${col};background:${col}18">P${t.priority}</span>
+                <span class="tag" style="color:#555;background:#ffffff08">${STATUS[t.status]}</span>
+                ${date?`<span class="tag" style="color:${overdue?'#ef4444':'#666'};background:#ffffff08">📅 ${fmt(date)}</span>`:''}
+              </div>
+            </div>
+            <button class="chk${t.status==='done'?' on':''}" onclick="toggleStatus('${t.id}',event)">${t.status==='done'?'✓':''}</button>
+          </div>
+        </div>`;
+      }).join('');
+
+  return `
+  <div class="hdr">
+    <div class="hdr-top">
+      <div>
+        <div class="lbl">Správce úkolů</div>
+        <div class="stat">${todayN>0?`<span style="color:#ef4444">${todayN} dnes · </span>`:''}<span style="color:#555">${activeN} aktivních</span></div>
+      </div>
+      <button class="btn-done${state.showDone?' on':''}" onclick="state.showDone=!state.showDone;render()">${state.showDone?'✓ Hotové':'Hotové'}</button>
+    </div>
+    <div class="tabs">
+      ${[['today','Dnes'],['week','Týden'],['all','Vše']].map(([v,l])=>`<button class="tab${state.tf===v?' on':''}" onclick="state.tf='${v}';render()">${l}</button>`).join('')}
+    </div>
+    <div class="ftabs">
+      ${[['all','Všechny'],['mine','🔵 Moje'],['watch','🟡 Hlídám']].map(([f,l])=>`<button class="ftab${state.yf===f?' on':''}" onclick="state.yf='${f}';render()">${l}</button>`).join('')}
+    </div>
+  </div>
+  <div class="content">${cards}</div>
+  <button class="fab" onclick="openAdd()">+</button>`;
+}
+
+function renderAdd() {
+  const s = state;
+  let body = '';
+
+  if (!s.draft && !s.manual) {
+    body = `
+    <div class="voice-box">
+      <div class="voice-box-title">🎙 Zadej úkol hlasem nebo textem</div>
+      <textarea class="voice-textarea" placeholder="Napiš nebo nadiktuj úkol přirozeně...&#10;&#10;Např: Zavolat Novákovi ohledně smlouvy do pátku, důležité&#10;Nebo: Zkontrolovat jestli Martin odevzdal zprávu příští týden" oninput="state.voiceText=this.value">${esc(s.voiceText)}</textarea>
+      <div class="voice-hint">
+        📱 <b>Mobil:</b> ťukni do pole → mikrofon 🎤 na klávesnici<br>
+        💻 <b>Windows:</b> klikni do pole → Win + H
+      </div>
+      <button class="btn-analyze" onclick="analyze()" ${s.parsing?'disabled':''}>${s.parsing?'⏳ Analyzuji...':'✨ Analyzovat AI'}</button>
+    </div>
+    ${s.errMsg?`<div class="err">${esc(s.errMsg)}</div>`:''}
+    <div class="sep"></div>
+    <button class="btn-manual" onclick="openManual()">✏️ Zadat ručně bez AI</button>`;
+
+  } else if (s.dups.length > 0 && s.draft) {
+    body = `
+    ${s.errMsg?`<div class="err">${esc(s.errMsg)}</div>`:''}
+    <div class="dup-box">
+      <div style="font-size:12px;color:#f59e0b;margin-bottom:10px">⚠️ Podobný úkol již existuje:</div>
+      ${s.dups.map(d=>`<div class="dup-item">
+        <div style="font-size:14px;font-weight:600;margin-bottom:2px">${esc(d.title)}</div>
+        <div style="font-size:12px;color:#666;margin-bottom:8px">${STATUS[d.status]} · P${d.priority} · ${esc(d.project||'')}</div>
+        <button class="btn btn-save" style="padding:8px 0;font-size:13px" onclick="confirmSave('${d.id}')">Aktualizovat tento úkol</button>
+      </div>`).join('')}
+      <button class="btn btn-cancel" style="padding:8px 0;font-size:13px;margin-top:4px;width:100%;border:1px solid #333" onclick="state.dups=[];render()">Přidat jako nový úkol</button>
+    </div>`;
+
+  } else if (s.draft) {
+    body = `
+    ${!s.manual?'<div class="ai-lbl">✨ AI NAVRHUJE — uprav pokud potřebuješ</div>':''}
+    ${s.errMsg?`<div class="err">${esc(s.errMsg)}</div>`:''}
+    ${formHTML('✓ Uložit úkol', "state.draft=null;state.dups=[];state.manual=false;state.voiceText='';state.errMsg='';render()")}`;
+  }
+
+  return `<div class="screen">
+    <div class="back-row">
+      <button class="back" onclick="state.screen='list';state.draft=null;state.voiceText='';state.manual=false;state.dups=[];state.errMsg='';render()">←</button>
+      <div class="screen-title">Nový úkol</div>
+    </div>
+    ${body}
+  </div>`;
+}
+
+function renderDetail() {
+  const task = state.tasks.find(t=>String(t.id)===String(state.sel));
+  if (!task) { state.screen='list'; render(); return ''; }
+  const col = PC[pc(task.priority)];
+
+  if (state.editMode && state.draft) {
+    return `<div class="screen">
+      <div class="back-row">
+        <button class="back" onclick="state.editMode=false;state.draft=null;render()">←</button>
+        <div class="screen-title">Upravit úkol</div>
+      </div>
+      ${state.errMsg?`<div class="err">${esc(state.errMsg)}</div>`:''}
+      ${formHTML('✓ Uložit změny', "state.editMode=false;state.draft=null;render()")}
+    </div>`;
+  }
+
+  const cells = [
+    ['Priorita', `${task.priority}/10`, col],
+    task.dueDate?['Termín', fmt(task.dueDate), '#888']:null,
+    task.deadline?['Deadline', fmt(task.deadline), '#ef4444']:null,
+    task.reminderDate?['Připomenutí', fmt(task.reminderDate), '#a0a0ff']:null,
+    task.estimatedHours?['Odh. čas', `${task.estimatedHours}h`, '#888']:null,
+  ].filter(Boolean);
+
+  return `<div class="screen">
+    <div class="back-row" style="justify-content:space-between">
+      <button class="back" onclick="state.screen='list';state.voiceEditText='';state.errMsg='';render()">←</button>
+      <div style="display:flex;gap:8px">
+        <button style="background:#1a1a2e;border:1px solid #3a3a6e;color:#a0a0ff;border-radius:8px;padding:6px 14px;font-size:13px" onclick="state.draft={...state.tasks.find(t=>String(t.id)==='${task.id}')};state.editMode=true;render()">✏️ Upravit</button>
+        <button style="background:#1f0a0a;border:1px solid #5a1a1a;color:#f87171;border-radius:8px;padding:6px 14px;font-size:13px" onclick="delTask('${task.id}')">🗑</button>
+      </div>
+    </div>
+    <div style="border-left:4px solid ${col};padding-left:16px;margin-bottom:18px">
+      <div style="font-size:11px;color:#555;margin-bottom:4px">${esc(task.project||'Bez projektu')}</div>
+      <div style="font-size:20px;font-weight:700;margin-bottom:6px">${task.type==='mine'?'🔵':'🟡'} ${esc(task.title)}</div>
+      ${task.assignee?`<div style="font-size:13px;color:#f59e0b;margin-bottom:4px">👤 ${esc(task.assignee)}</div>`:''}
+      ${task.detail?`<div style="font-size:14px;color:#888;line-height:1.5">${esc(task.detail)}</div>`:''}
+    </div>
+    <div class="status-row">
+      ${SK.map(k=>`<button class="status-btn${task.status===k?' on':''}" onclick="setStatus('${task.id}','${k}')">${STATUS[k]}</button>`).join('')}
+    </div>
+    <div class="detail-grid">
+      ${cells.map(([l,v,c])=>`<div class="detail-cell"><div class="detail-cell-lbl">${l}</div><div style="font-size:14px;font-weight:600;color:${c}">${v}</div></div>`).join('')}
+    </div>
+    <div class="vedit-box">
+      <div style="font-size:11px;color:#666;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">✏️ Hlasová nebo textová úprava</div>
+      <div style="font-size:12px;color:#333;margin-bottom:10px">Např: "přesuň na pátek", "přidej do detailu: zavolat ráno", "změň prioritu na 9"</div>
+      <textarea class="voice-textarea" style="min-height:70px" placeholder="Napiš nebo nadiktuj příkaz..." oninput="state.voiceEditText=this.value">${esc(state.voiceEditText)}</textarea>
+      ${state.errMsg?`<div class="err">${esc(state.errMsg)}</div>`:''}
+      <button class="btn-analyze" style="margin-top:10px" onclick="analyzeEdit('${task.id}')" ${state.parsing?'disabled':''}>${state.parsing?'⏳ Upravuji...':'✨ Aplikovat úpravu'}</button>
+    </div>
+  </div>`;
+}
+
+function openDetail(id){ state.sel=id; state.screen='detail'; state.voiceEditText=''; state.errMsg=''; render(); }
+function openAdd(){ state.draft=null; state.voiceText=''; state.manual=false; state.dups=[]; state.errMsg=''; state.screen='add'; render(); }
+
+// Start
+if (API_URL === 'VLOZ_SEM_URL_APPS_SCRIPTU') {
+  document.getElementById('app').innerHTML = `<div class="screen">
+    <div style="text-align:center;padding:40px 0">
+      <div style="font-size:48px;margin-bottom:16px">⚙️</div>
+      <div style="font-size:20px;font-weight:700;margin-bottom:8px">Nastavení potřeba</div>
+      <div style="font-size:13px;color:#555;line-height:1.6">V souboru index.html nahraď<br><code style="color:#a0a0ff">VLOZ_SEM_URL_APPS_SCRIPTU</code><br>skutečnou URL tvého Apps Scriptu</div>
+    </div>
+  </div>`;
+} else {
+  render();
+}
+</script>
+</body>
+</html>
