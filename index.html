@@ -130,14 +130,12 @@ const isWeek=iso=>{if(!iso)return false;const d=new Date(iso),n=new Date(),e=new
 
 // ── API ──────────────────────────────────────────────────────
 async function api(action, body={}) {
-  const url = API_URL + '?action=' + action;
   try {
-    const res = await fetch(url, {
-      method: body && Object.keys(body).length ? 'POST' : 'GET',
-      headers: {'Content-Type':'application/json'},
-      body: Object.keys(body).length ? JSON.stringify({...body, action}) : undefined,
-      redirect: 'follow'
-    });
+    let url = API_URL + '?action=' + encodeURIComponent(action);
+    if (Object.keys(body).length) {
+      url += '&data=' + encodeURIComponent(JSON.stringify(body));
+    }
+    const res = await fetch(url, { redirect: 'follow' });
     return await res.json();
   } catch(e) {
     return {ok:false, error: e.message};
