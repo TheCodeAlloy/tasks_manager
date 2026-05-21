@@ -262,7 +262,16 @@ async function analyzeEdit(taskId) {
   render();
 }
 
-function edDraft(f,v){ state.draft = {...state.draft,[f]:v}; render(); }
+function edDraft(f,v){ 
+  state.draft = {...state.draft,[f]:v}; 
+  // Překresli jen když se mění pole která ovlivňují strukturu formuláře
+  if(f==='type' || f==='priority' || f==='status') render();
+  // Pro ostatní pole jen aktualizuj label priority pokud existuje
+  if(f==='priority') {
+    const el = document.getElementById('prioLabel');
+    if(el) el.textContent = 'PRIORITA: ' + v + '/10';
+  }
+}
 function openManual(){ state.manual=true; state.draft={title:'',detail:'',project:'',type:'mine',priority:5,status:'todo',dueDate:'',deadline:'',reminderDate:'',estimatedHours:'',assignee:''}; render(); }
 
 // ── FILTER ───────────────────────────────────────────────────
@@ -302,7 +311,7 @@ function formHTML(saveLabel, cancelAction) {
     </select></div>
   </div>
   ${d.type==='watch'?`<div class="fld"><div class="fld-lbl">KDO TO DĚLÁ</div><input class="inp" value="${esc(d.assignee||'')}" oninput="edDraft('assignee',this.value)"></div>`:''}
-  <div class="fld"><div class="fld-lbl">PRIORITA: ${d.priority||5}/10</div>
+  <div class="fld"><div class="fld-lbl" id="prioLabel">PRIORITA: ${d.priority||5}/10</div>
     <input type="range" min="1" max="10" value="${d.priority||5}" style="width:100%;accent-color:${PC[pc(d.priority||5)]}" oninput="edDraft('priority',+this.value)">
   </div>
   <div class="grid2">
