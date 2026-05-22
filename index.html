@@ -129,17 +129,19 @@ const isToday=iso=>iso&&new Date(iso).toDateString()===new Date().toDateString()
 const isWeek=iso=>{if(!iso)return false;const d=new Date(iso),n=new Date(),e=new Date();e.setDate(n.getDate()+7);return d>=n&&d<=e;};
 
 // ── API ──────────────────────────────────────────────────────
-async function api(action, body={}) {
+async function api(action, data={}) {
   try {
-    const url = API_URL;
-    const payload = {...body, action};
-    const res = await fetch(url, {
-      method: 'POST',
-      redirect: 'follow',
-      body: JSON.stringify(payload)
-    });
+    let url = API_URL + '?action=' + encodeURIComponent(action);
+    if (Object.keys(data).length) {
+      url += '&data=' + encodeURIComponent(JSON.stringify(data));
+    }
+    const res = await fetch(url, { redirect: 'follow' });
     const text = await res.text();
-    return JSON.parse(text);
+    try {
+      return JSON.parse(text);
+    } catch(e) {
+      return {ok:false, error: 'Chyba odpovědi: ' + text.substring(0,300)};
+    }
   } catch(e) {
     return {ok:false, error: e.message};
   }
@@ -150,11 +152,20 @@ async function api(action, body={}) {
 
 // ── LOAD ─────────────────────────────────────────────────────
 async function loadAll() {
-  state.loading = true; state.screen = 'list'; render();
-  const [tr, pr, kr] = await Promise.all([api('getTasks'), api('getProjects'), api('getKb')]);
-  if (tr.ok) state.tasks = tr.tasks || [];
-  if (pr.ok) state.projects = pr.projects || [];
-  if (kr.ok) state.kb = kr.kb || [];
+  state.loading = true; state.screen = 'list'; state.errMsg = ''; render();
+  try {
+    const tr = await api('getTasks');
+    if (tr.ok) state.tasks = tr.tasks || [];
+    else state.errMsg = 'Chyba načítání úkolů: ' + (tr.error || JSON.stringify(tr));
+    
+    const pr = await api('getProjects');
+    if (pr.ok) state.projects = pr.projects || [];
+    
+    const kr = await api('getKb');
+    if (kr.ok) state.kb = kr.kb || [];
+  } catch(e) {
+    state.errMsg = 'Chyba připojení: ' + e.message;
+  }
   state.loading = false;
   render();
 }
@@ -193,12 +204,9 @@ async function confirmSave(overrideId=null) {
   state.loading = true; render();
   let r;
   if (overrideId) {
-    r = await api('updateTask', {task: {...state.draft, id: overrideId}});
+    r = await api('updateTask', {...state.draft, id: overrideId});
   } else {
-    r = await api('addTask', {task: state.draft});
-    if (r.ok && state.draft.title && state.draft.project) {
-      await api('addKnowledge', {entry: {input: state.draft.title.substring(0,60), project: state.draft.project, type: state.draft.type, priority: state.draft.priority}});
-    }
+    r = await api('addTask', state.draft);
   }
   if (r.ok) {
     await loadAll();
@@ -209,7 +217,7 @@ async function confirmSave(overrideId=null) {
 
 async function saveEdit() {
   state.loading = true; render();
-  const r = await api('updateTask', {task: state.draft});
+  const r = await api('updateTask', state.draft);
   if (r.ok) { await loadAll(); state.editMode = false; state.draft = null; }
   else { state.errMsg = r.error; }
   state.loading = false; render();
@@ -223,7 +231,7 @@ async function toggleStatus(id, e) {
   const updated = {...task, status: next[task.status]||'todo'};
   state.tasks = state.tasks.map(t=>String(t.id)===String(id)?updated:t);
   render();
-  await api('updateTask', {task: updated});
+  await api('updateTask', updated);
 }
 
 async function setStatus(id, s) {
@@ -232,13 +240,13 @@ async function setStatus(id, s) {
   const updated = {...task, status: s};
   state.tasks = state.tasks.map(t=>String(t.id)===String(id)?updated:t);
   render();
-  await api('updateTask', {task: updated});
+  await api('updateTask', updated);
 }
 
 async function delTask(id) {
   if (!confirm('Smazat úkol?')) return;
   state.loading = true; render();
-  await api('deleteTask', {id});
+  await api('deleteTask', {id: id});
   await loadAll();
   state.screen = 'list';
   state.loading = false; render();
@@ -254,7 +262,7 @@ async function analyzeEdit(taskId) {
   state.parsing = false;
   if (r.ok) {
     const updated = {...task, ...r.task, id: task.id};
-    await api('updateTask', {task: updated});
+    await api('updateTask', updated);
     state.voiceEditText = '';
     await loadAll();
     state.sel = task.id;
@@ -346,6 +354,7 @@ function renderList() {
   const todayN = state.tasks.filter(t=>t.status!=='done'&&(isToday(t.dueDate)||isToday(t.deadline))).length;
   const activeN = state.tasks.filter(t=>t.status!=='done').length;
 
+  const errBar = state.errMsg ? `<div class="err" style="margin-bottom:12px">⚠️ ${esc(state.errMsg)}<br><br><small>URL: ${API_URL.substring(0,60)}...</small></div>` : '';
   const cards = list.length === 0
     ? `<div class="empty"><div style="font-size:36px;margin-bottom:10px">📋</div><div style="color:#444">Žádné úkoly</div><div style="font-size:12px;color:#222;margin-top:4px">Ťukni + pro přidání</div></div>`
     : list.map(t => {
@@ -384,7 +393,7 @@ function renderList() {
       ${[['all','Všechny'],['mine','🔵 Moje'],['watch','🟡 Hlídám']].map(([f,l])=>`<button class="ftab${state.yf===f?' on':''}" onclick="state.yf='${f}';render()">${l}</button>`).join('')}
     </div>
   </div>
-  <div class="content">${cards}</div>
+  <div class="content">${errBar}${cards}</div>
   <button class="fab" onclick="openAdd()">+</button>`;
 }
 
