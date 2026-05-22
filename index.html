@@ -9,7 +9,812 @@
 body{background:#0a0a0f;color:#ffffff;font-family:system-ui,sans-serif;max-width:500px;margin:0 auto;padding-bottom:90px;min-height:100vh;font-size:17px;}
 button{font-family:inherit;cursor:pointer;}
 input,select,textarea{font-family:inherit;color-scheme:dark;font-size:17px;}
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Správce úkolů</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:#0a0a0f;color:#ffffff;font-family:system-ui,sans-serif;max-width:500px;margin:0 auto;padding-bottom:90px;min-height:100vh;font-size:17px;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;color-scheme:dark;font-size:17px;}
 
+/* ── HEADER ── */
+.hdr{padding:18px 16px 12px;border-bottom:1px solid #2a2a3e;position:sticky;top:0;background:#0a0a0f;z-index:10;}
+.hdr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.hdr-label{font-size:12px;color:#7070a0;letter-spacing:2px;text-transform:uppercase;margin-bottom:3px;}
+.hdr-stat{font-size:20px;font-weight:700;color:#fff;}
+.hdr-stat .today-n{color:#ff5555;}
+.hdr-stat .active-n{color:#8888ff;}
+
+/* Tabs */
+.tabs{display:flex;gap:6px;margin-bottom:8px;}
+.tab{flex:1;padding:8px 0;border-radius:9px;font-size:14px;font-weight:600;border:1px solid #2a2a3e;background:transparent;color:#666;}
+.tab.on{background:#1e1e3f;border-color:#4a4a8e;color:#a0a0ff;}
+.ftabs{display:flex;gap:6px;}
+.ftab{flex:1;padding:6px 0;border-radius:7px;font-size:13px;border:none;background:transparent;color:#555;}
+.ftab.on{background:#1e1e1e;color:#ddd;}
+
+/* Nav bar */
+.nav-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:6px 0;}
+.nav-btn{background:none;border:none;color:#8888ff;font-size:24px;padding:0 12px;line-height:1;}
+.nav-label{font-size:16px;font-weight:700;color:#fff;text-align:center;flex:1;}
+.nav-today{font-size:12px;color:#8888ff;text-decoration:underline;background:none;border:none;display:block;text-align:center;margin-top:2px;}
+
+/* Search */
+.search-bar{display:flex;gap:8px;margin-bottom:8px;}
+.search-inp{flex:1;background:#111;border:1px solid #2a2a3e;border-radius:10px;padding:9px 14px;color:#fff;font-size:15px;}
+.search-inp:focus{outline:none;border-color:#4a4a8e;}
+.btn-ai-search{background:#1a1a3a;border:1px solid #3a3a6e;color:#a0a0ff;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;white-space:nowrap;}
+.btn-ai-search.searching{color:#555;border-color:#222;}
+
+/* Cat filter */
+.cat-select{width:100%;background:#111;border:1px solid #2a2a3e;border-radius:10px;padding:9px 14px;color:#fff;font-size:15px;margin-bottom:8px;}
+.cat-select:focus{outline:none;border-color:#4a4a8e;}
+
+/* Done toggle */
+.btn-sm{background:#111;border:1px solid #2a2a3e;color:#666;border-radius:20px;padding:6px 14px;font-size:12px;}
+.btn-sm.on{background:#1e2a1e;color:#44dd66;}
+
+/* ── TASK CARD ── */
+.content{padding:12px 16px 0;}
+.task{border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer;transition:opacity .2s;}
+.task-kats{font-size:13px;color:#7070a0;margin-bottom:3px;}
+.task-title{font-size:18px;font-weight:600;margin-bottom:8px;line-height:1.3;}
+.task-tags{display:flex;gap:6px;flex-wrap:wrap;}
+.tag{font-size:13px;border-radius:6px;padding:3px 9px;font-weight:600;}
+.task-row{display:flex;justify-content:space-between;align-items:flex-start;}
+.chk{width:32px;height:32px;border-radius:50%;border:2px solid #333;background:transparent;color:#44dd66;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:10px;margin-top:2px;}
+.chk.on{border-color:#44dd66;background:rgba(68,221,102,.15);}
+.empty{text-align:center;padding:60px 0;color:#2a2a3a;}
+.fab{position:fixed;bottom:24px;right:20px;width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#2a2a6e,#3a3aae);border:none;color:#fff;font-size:30px;box-shadow:0 4px 24px rgba(100,100,220,.5);display:flex;align-items:center;justify-content:center;z-index:20;}
+
+/* ── SCREENS ── */
+.screen{min-height:100vh;background:#0a0a0f;padding:20px 16px 90px;max-width:500px;margin:0 auto;}
+.back-row{display:flex;align-items:center;gap:12px;margin-bottom:22px;}
+.back-row.between{justify-content:space-between;}
+.back{background:none;border:none;color:#7070a0;font-size:24px;}
+.screen-title{font-size:21px;font-weight:700;color:#fff;}
+
+/* ── FORM ── */
+.fld{margin-bottom:14px;}
+.fld-lbl{font-size:12px;color:#7070a0;margin-bottom:5px;letter-spacing:.5px;text-transform:uppercase;}
+.inp{width:100%;background:#14141e;border:1px solid #2a2a3e;border-radius:10px;padding:12px 14px;color:#fff;font-size:17px;font-family:inherit;}
+.inp:focus{outline:none;border-color:#6060ae;}
+.inp.muted{color:#b0b0c8;}
+.inp.big{font-size:19px;font-weight:600;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.fl{display:flex;gap:10px;margin-top:18px;}
+.btn-cancel{flex:1;padding:14px 0;border-radius:12px;background:transparent;border:1px solid #333;color:#777;font-size:16px;}
+.btn-save{flex:2;padding:14px 0;border-radius:12px;background:linear-gradient(135deg,#1a4a1a,#2a6a2a);border:1px solid #4a8a4a;color:#44dd66;font-size:16px;font-weight:700;}
+.btn-analyze{width:100%;padding:14px 0;background:#2a2a7e;border:1px solid #4a4a9e;border-radius:12px;color:#a0a0ff;font-size:16px;font-weight:600;margin-top:12px;}
+.btn-analyze:disabled{background:#111;color:#444;border-color:#222;}
+.btn-manual{width:100%;padding:13px 0;background:transparent;border:1px solid #222;border-radius:12px;color:#555;font-size:15px;margin-top:10px;}
+
+/* Voice box */
+.vbox{background:#14141e;border:1px solid #2a2a4e;border-radius:16px;padding:18px;margin-bottom:16px;}
+.vbox-title{font-size:12px;color:#7070a0;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;}
+.vtextarea{width:100%;background:#0d0d1e;border:1px solid #2a2a3e;border-radius:12px;padding:14px;color:#fff;font-size:17px;font-family:inherit;resize:none;min-height:100px;line-height:1.5;}
+.vtextarea:focus{outline:none;border-color:#6060ae;}
+.vhint{font-size:13px;color:#444;margin-top:10px;line-height:1.8;}
+.vhint b{color:#666;}
+.ai-lbl{font-size:13px;color:#44dd66;letter-spacing:1px;margin-bottom:14px;}
+
+/* Detail */
+.status-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;}
+.sbtn{padding:8px 14px;border-radius:22px;font-size:13px;border:1px solid #222;background:transparent;color:#555;}
+.sbtn.on{background:#1e1e3f;border-color:#4a4a8e;color:#a0a0ff;}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+.dcell{background:#14141e;border:1px solid #2a2a3e;border-radius:12px;padding:14px;}
+.dcell-lbl{font-size:12px;color:#7070a0;margin-bottom:5px;text-transform:uppercase;}
+.dcell-val{font-size:16px;font-weight:600;}
+
+/* Dup */
+.dup-box{background:#1a1a0a;border:1px solid #5a5a1a;border-radius:14px;padding:16px;margin-bottom:16px;}
+.dup-item{background:#111;border-radius:10px;padding:12px;margin-bottom:10px;}
+
+/* Error */
+.err{background:#200a0a;border:1px solid #6a1a1a;border-radius:12px;padding:14px;margin-bottom:14px;font-size:15px;color:#ff7070;}
+
+/* Loading */
+.loading{text-align:center;padding:80px 20px;color:#333;font-size:16px;}
+
+/* Toast */
+#toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1a4a1a;border:1px solid #4a8a4a;color:#44dd66;padding:14px 22px;border-radius:14px;font-size:15px;font-weight:600;z-index:200;max-width:340px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.6);pointer-events:none;}
+
+/* Overdue review */
+.overdue-screen{min-height:100vh;background:#0a0a0f;padding:20px 16px 90px;}
+.overdue-item{background:#14141e;border:1px solid #5a3a1a;border-radius:12px;padding:14px;margin-bottom:12px;}
+.overdue-title{font-size:17px;font-weight:600;margin-bottom:10px;}
+.overdue-btns{display:flex;gap:8px;flex-wrap:wrap;}
+.obtn{padding:8px 14px;border-radius:10px;font-size:13px;font-weight:600;border:1px solid;}
+.obtn-today{background:#1a2a1a;border-color:#4a6a4a;color:#44dd66;}
+.obtn-tom{background:#1a1a2a;border-color:#4a4a6a;color:#a0a0ff;}
+.obtn-wait{background:#2a2a1a;border-color:#6a6a2a;color:#ffaa00;}
+</style>
+</head>
+<body>
+<div id="app"><div class="loading">⏳ Načítám...</div></div>
+
+<script>
+// ══════════════════════════════════════════
+const API = 'https://script.google.com/macros/s/AKfycbxQj36w1AQ2SxkTDuzla1L8SNzFA2cjnmKtVD9tVpb8pk0HhObhKJGSSaW11ieWyFoG8g/exec';
+// ══════════════════════════════════════════
+
+// ── KONSTANTY ──
+const ST = {todo:'📋 Čeká', inprogress:'🔄 Rozpracováno', waiting:'⏳ Čekám', done:'✅ Hotovo'};
+const SK = ['todo','inprogress','waiting','done'];
+const PC = {h:'#ff5555', m:'#ffaa00', l:'#44dd66'};
+const pc = p => p>=8?'h':p>=4?'m':'l';
+const CACHE_KEY = 'tm_v3';
+const CACHE_TTL = 4*60*1000;
+
+// ── STATE ──
+let tasks=[], categories=[];
+let screen='list', sel=null, editMode=false;
+let viewMode='day', navDate=new Date(), filterCat='';
+let showDone=false, typeFilter='all';
+let voiceText='', draft=null, dups=[], manual=false, parsing=false;
+let voiceEditText='', errMsg='', loading=false;
+let searchText='', aiSearching=false, aiSearchIds=null, searchTimer=null;
+let overdueList=[], overdueShown=false;
+let toastTimer=null;
+let touchStartX=0, touchStartY=0;
+
+// ── HELPERS ──
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function dateStr(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function isToday2(d){
+  const n=new Date();
+  return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();
+}
+
+function getWeekStart(d){
+  const r=new Date(d);
+  const day=r.getDay()||7;
+  r.setDate(r.getDate()-day+1);
+  r.setHours(0,0,0,0);
+  return r;
+}
+
+function fmt(iso){
+  if(!iso)return null;
+  const d=new Date(iso), diff=Math.round((d-new Date())/86400000);
+  if(diff===0)return'Dnes';if(diff===1)return'Zítra';if(diff===-1)return'Včera';
+  if(diff<0)return`Před ${-diff}d`;
+  if(diff<7)return d.toLocaleDateString('cs-CZ',{weekday:'short'});
+  return d.toLocaleDateString('cs-CZ',{day:'numeric',month:'short'});
+}
+
+function inWeek(iso, baseDate){
+  if(!iso)return false;
+  const d=new Date(iso), ws=getWeekStart(baseDate), we=new Date(ws);
+  we.setDate(ws.getDate()+6); we.setHours(23,59,59);
+  return d>=ws&&d<=we;
+}
+
+function inMonth(iso, baseDate){
+  if(!iso)return false;
+  const d=new Date(iso);
+  return d.getMonth()===baseDate.getMonth()&&d.getFullYear()===baseDate.getFullYear();
+}
+
+// ── CACHE ──
+function loadCache(){
+  try{
+    const c=localStorage.getItem(CACHE_KEY);
+    if(!c)return null;
+    const d=JSON.parse(c);
+    if(Date.now()-d.ts>CACHE_TTL)return null;
+    return d;
+  }catch{return null;}
+}
+function saveCache(){
+  try{localStorage.setItem(CACHE_KEY,JSON.stringify({tasks,categories,ts:Date.now()}));}catch{}
+}
+function clearCache(){try{localStorage.removeItem(CACHE_KEY);}catch{}}
+
+// ── API ──
+async function api(action, data={}){
+  let url=API+'?action='+action;
+  Object.keys(data).forEach(k=>{
+    const v=data[k];
+    if(v!==undefined&&v!==null)
+      url+='&'+k+'='+encodeURIComponent(typeof v==='object'?JSON.stringify(v):String(v));
+  });
+  try{
+    const res=await fetch(url,{redirect:'follow'});
+    const text=await res.text();
+    if(!text||text==='undefined')return{ok:false,error:'Prázdná odpověď'};
+    return JSON.parse(text);
+  }catch(e){return{ok:false,error:e.message};}
+}
+
+// ── LOAD ──
+async function loadTasks(){
+  const cached=loadCache();
+  if(cached){
+    tasks=cached.tasks||[];
+    categories=cached.categories||[];
+    loading=false;
+    render();
+  } else {
+    loading=true; render();
+  }
+  // Refresh na pozadí
+  try{
+    const [tr,cr]=await Promise.all([api('getTasks'),api('getCategories')]);
+    if(tr.ok) tasks=tr.tasks||[];
+    else if(!cached) errMsg=tr.error||'Chyba načítání';
+    if(cr.ok) categories=cr.categories||[];
+    saveCache();
+    loading=false;
+    render();
+    checkOverdue();
+  }catch(e){
+    if(!cached){loading=false;errMsg='Chyba: '+e.message;render();}
+  }
+}
+
+// ── OVERDUE ──
+function checkOverdue(){
+  if(overdueShown)return;
+  const today=dateStr(new Date());
+  const od=tasks.filter(t=>t.status!=='done'&&t.dueDate&&t.dueDate<today);
+  if(!od.length)return;
+  overdueList=od;
+  overdueShown=true;
+  screen='overdue';
+  render();
+}
+
+async function handleOverdue(taskId, action){
+  const t=tasks.find(x=>String(x.id)===String(taskId));
+  if(!t)return;
+  const today=dateStr(new Date());
+  const tomorrow=dateStr(new Date(Date.now()+86400000));
+  let updated={...t};
+  if(action==='today') updated.dueDate=today;
+  else if(action==='tomorrow') updated.dueDate=tomorrow;
+  else if(action==='wait'){updated.dueDate='';updated.kat1=updated.kat1||'Až budu mít čas';}
+  tasks=tasks.map(x=>String(x.id)===String(taskId)?updated:x);
+  api('updateTask',{task:updated});
+  overdueList=overdueList.filter(x=>String(x.id)!==String(taskId));
+  if(!overdueList.length)screen='list';
+  render();
+}
+
+// ── TOAST ──
+function toast(msg,dur=3500){
+  const el=document.getElementById('toast');
+  if(el)el.remove();
+  const t=document.createElement('div');
+  t.id='toast';
+  t.innerHTML=msg;
+  document.body.appendChild(t);
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{const e=document.getElementById('toast');if(e)e.remove();},dur);
+}
+
+// ── NAVIGATION ──
+function navigateNext(){
+  navDate=new Date(navDate);
+  if(viewMode==='day') navDate.setDate(navDate.getDate()+1);
+  else if(viewMode==='week') navDate.setDate(navDate.getDate()+7);
+  else if(viewMode==='month') navDate.setMonth(navDate.getMonth()+1);
+  render();
+}
+function navigatePrev(){
+  navDate=new Date(navDate);
+  if(viewMode==='day') navDate.setDate(navDate.getDate()-1);
+  else if(viewMode==='week') navDate.setDate(navDate.getDate()-7);
+  else if(viewMode==='month') navDate.setMonth(navDate.getMonth()-1);
+  render();
+}
+
+// ── FILTER ──
+function filtered(){
+  let list=tasks.filter(t=>{
+    if(!showDone&&t.status==='done')return false;
+    if(typeFilter==='mine'&&t.type!=='mine')return false;
+    if(typeFilter==='watch'&&t.type!=='watch')return false;
+    if(viewMode==='day'){
+      const d=dateStr(navDate);
+      return t.dueDate===d||t.deadline===d;
+    }
+    if(viewMode==='week'){
+      return inWeek(t.dueDate,navDate)||inWeek(t.deadline,navDate);
+    }
+    if(viewMode==='month'){
+      return inMonth(t.dueDate,navDate)||inMonth(t.deadline,navDate);
+    }
+    if(viewMode==='cat'){
+      const ok=!filterCat||(t.kat1===filterCat||t.kat2===filterCat||t.kat3===filterCat);
+      if(!ok)return false;
+      if(searchText){
+        const q=searchText.toLowerCase();
+        return t.title.toLowerCase().includes(q)||(t.detail||'').toLowerCase().includes(q);
+      }
+      if(aiSearchIds) return aiSearchIds.includes(String(t.id));
+      return true;
+    }
+    // all
+    if(searchText){
+      const q=searchText.toLowerCase();
+      return t.title.toLowerCase().includes(q)||(t.detail||'').toLowerCase().includes(q)||
+             (t.kat1||'').toLowerCase().includes(q);
+    }
+    if(aiSearchIds) return aiSearchIds.includes(String(t.id));
+    return true;
+  });
+
+  // Sort
+  if(viewMode==='cat'&&filterCat){
+    list.sort((a,b)=>{
+      const da=a.dueDate||a.deadline||'9999', db=b.dueDate||b.deadline||'9999';
+      if(da!==db)return da.localeCompare(db);
+      return b.priority-a.priority;
+    });
+  } else {
+    list.sort((a,b)=>{
+      if(a.status==='done'&&b.status!=='done')return 1;
+      if(a.status!=='done'&&b.status==='done')return-1;
+      return b.priority-a.priority;
+    });
+  }
+  return list;
+}
+
+// ── TASK OPS ──
+async function saveTask(){
+  if(!draft)return;
+  loading=true; render();
+  const r=await api('addTask',{task:draft});
+  if(r.ok){
+    clearCache();await loadTasks();
+    draft=null;dups=[];voiceText='';manual=false;errMsg='';screen='list';
+    toast(`✅ Uloženo: <b>${esc(draft?.title||'Nový úkol')}</b>`);
+  } else errMsg=r.error||'Chyba uložení';
+  loading=false; render();
+}
+
+async function saveEdit(){
+  if(!draft||!draft.id)return;
+  loading=true; render();
+  const r=await api('updateTask',{task:draft});
+  if(r.ok){clearCache();await loadTasks();editMode=false;draft=null;errMsg='';toast('✅ Úkol upraven');}
+  else errMsg=r.error||'Chyba';
+  loading=false; render();
+}
+
+async function updateDup(id){
+  if(!draft)return;
+  loading=true; render();
+  const r=await api('updateTask',{task:{...draft,id}});
+  if(r.ok){clearCache();await loadTasks();draft=null;dups=[];voiceText='';screen='list';errMsg='';toast('✅ Existující úkol aktualizován');}
+  else errMsg=r.error;
+  loading=false; render();
+}
+
+async function quickStatus(id,e){
+  if(e)e.stopPropagation();
+  const next={todo:'inprogress',inprogress:'waiting',waiting:'done',done:'todo'};
+  const t=tasks.find(x=>String(x.id)===String(id));
+  if(!t)return;
+  const updated={...t,status:next[t.status]||'todo'};
+  tasks=tasks.map(x=>String(x.id)===String(id)?updated:x);
+  render();
+  api('updateTask',{task:updated});
+  if(updated.status==='done')toast('✅ Hotovo: '+t.title);
+}
+
+async function setStatus(id,s){
+  const t=tasks.find(x=>String(x.id)===String(id));
+  if(!t)return;
+  const updated={...t,status:s};
+  tasks=tasks.map(x=>String(x.id)===String(id)?updated:x);
+  render();
+  api('updateTask',{task:updated});
+}
+
+async function delTask(id){
+  if(!confirm('Smazat úkol?'))return;
+  loading=true; render();
+  await api('deleteTask',{id});
+  clearCache();await loadTasks();
+  screen='list';loading=false;render();
+}
+
+// ── AI ──
+async function doAnalyze(){
+  if(!voiceText.trim()){errMsg='Napiš nebo nadiktuj text úkolu.';render();return;}
+  parsing=true;errMsg='';render();
+  const r=await api('analyze',{text:voiceText});
+  parsing=false;
+  if(r.ok){
+    const p=r.task;
+    dups=(p.duplicateIds||[]).map(id=>tasks.find(t=>String(t.id)===String(id))).filter(Boolean);
+    draft={...p,duplicateIds:undefined};
+    errMsg='';
+  } else errMsg=r.error||'Chyba AI';
+  render();
+}
+
+async function doEditAnalyze(taskId){
+  if(!voiceEditText.trim()){errMsg='Napiš příkaz.';render();return;}
+  parsing=true;errMsg='';render();
+  const r=await api('analyzeEdit',{id:taskId,command:voiceEditText});
+  parsing=false;
+  if(r.ok){
+    const updated={...tasks.find(t=>String(t.id)===String(taskId)),...r.task,id:taskId};
+    const upd=await api('updateTask',{task:updated});
+    if(upd.ok){clearCache();await loadTasks();voiceEditText='';sel=taskId;toast('✅ Úkol upraven');}
+    else errMsg=upd.error;
+  } else errMsg=r.error;
+  render();
+}
+
+function onSearch(val){
+  searchText=val;aiSearchIds=null;
+  clearTimeout(searchTimer);
+  searchTimer=setTimeout(()=>render(),300);
+}
+
+async function doAiSearch(){
+  if(!searchText.trim())return;
+  aiSearching=true;errMsg='';render();
+  const r=await api('analyzeSearch',{query:searchText});
+  aiSearching=false;
+  if(r.ok){aiSearchIds=(r.ids||[]).map(String);}
+  else errMsg=r.error;
+  render();
+}
+
+// ── DRAFT ──
+function ed(f,v){
+  if(!draft)return;
+  draft[f]=v;
+  if(f==='type'||f==='status')render();
+  if(f==='priority'){
+    const el=document.getElementById('prioLbl');
+    if(el)el.textContent='PRIORITA: '+v+'/10';
+    const sl=document.getElementById('prioSlider');
+    if(sl)sl.style.accentColor=PC[pc(+v)];
+  }
+}
+
+function openManual(){
+  manual=true;
+  draft={title:'',detail:'',kat1:'',kat2:'',kat3:'',type:'mine',priority:5,status:'todo',dueDate:'',deadline:'',reminderDate:'',estimatedHours:'',assignee:''};
+  render();
+}
+function openDetail(id){sel=id;screen='detail';voiceEditText='';errMsg='';render();}
+function openAdd(){draft=null;voiceText='';manual=false;dups=[];errMsg='';screen='add';render();}
+
+// ── FORM HTML ──
+function catDatalist(id){
+  return `<datalist id="${id}">${categories.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>`;
+}
+
+function formHTML(saveAction,cancelAction){
+  if(!draft)return'';
+  const d=draft;
+  const col=PC[pc(d.priority||5)];
+  return `
+  <div class="fld"><div class="fld-lbl">Název</div>
+    <input class="inp big" value="${esc(d.title)}" oninput="ed('title',this.value)" placeholder="Název úkolu...">
+  </div>
+  <div class="fld"><div class="fld-lbl">Kategorie 1</div>
+    <input class="inp" value="${esc(d.kat1||'')}" list="dl-kat1" placeholder="Vyberte nebo napište..." oninput="ed('kat1',this.value)">
+    ${catDatalist('dl-kat1')}
+  </div>
+  <div class="fld"><div class="fld-lbl">Kategorie 2</div>
+    <input class="inp" value="${esc(d.kat2||'')}" list="dl-kat2" placeholder="Volitelná druhá kategorie..." oninput="ed('kat2',this.value)">
+    ${catDatalist('dl-kat2')}
+  </div>
+  <div class="fld"><div class="fld-lbl">Kategorie 3</div>
+    <input class="inp" value="${esc(d.kat3||'')}" list="dl-kat3" placeholder="Volitelná třetí kategorie..." oninput="ed('kat3',this.value)">
+    ${catDatalist('dl-kat3')}
+  </div>
+  <div class="fld"><div class="fld-lbl">Detail</div>
+    <textarea class="inp muted" rows="3" oninput="ed('detail',this.value)" placeholder="Podrobnosti, poznámky...">${esc(d.detail||'')}</textarea>
+  </div>
+  <div class="grid2">
+    <div><div class="fld-lbl">Typ</div>
+      <select class="inp" onchange="ed('type',this.value)">
+        <option value="mine"${d.type==='mine'?' selected':''}>🔵 Udělám sám</option>
+        <option value="watch"${d.type==='watch'?' selected':''}>🟡 Hlídám</option>
+      </select>
+    </div>
+    <div><div class="fld-lbl">Stav</div>
+      <select class="inp" onchange="ed('status',this.value)">
+        ${SK.map(k=>`<option value="${k}"${d.status===k?' selected':''}>${ST[k]}</option>`).join('')}
+      </select>
+    </div>
+  </div>
+  ${d.type==='watch'?`<div class="fld"><div class="fld-lbl">Kdo to dělá</div><input class="inp" value="${esc(d.assignee||'')}" oninput="ed('assignee',this.value)"></div>`:''}
+  <div class="fld">
+    <div class="fld-lbl" id="prioLbl">Priorita: ${d.priority||5}/10</div>
+    <input id="prioSlider" type="range" min="1" max="10" value="${d.priority||5}" style="width:100%;accent-color:${col};height:6px;margin-top:6px" oninput="ed('priority',+this.value)">
+  </div>
+  <div class="grid2">
+    <div><div class="fld-lbl">Termín</div>
+      <input type="date" class="inp" value="${d.dueDate||''}" onclick="this.showPicker&&this.showPicker()" onchange="ed('dueDate',this.value)">
+    </div>
+    <div><div class="fld-lbl">Deadline</div>
+      <input type="date" class="inp" value="${d.deadline||''}" onclick="this.showPicker&&this.showPicker()" onchange="ed('deadline',this.value)">
+    </div>
+  </div>
+  <div class="grid2">
+    <div><div class="fld-lbl">Odh. čas (h)</div>
+      <input type="number" class="inp" min="0" step="0.5" value="${d.estimatedHours||''}" oninput="ed('estimatedHours',this.value)" placeholder="0.5">
+    </div>
+    <div></div>
+  </div>
+  <div class="fl">
+    <button class="btn-cancel" onclick="${cancelAction}">Zrušit</button>
+    <button class="btn-save" onclick="${saveAction}">✓ Uložit</button>
+  </div>`;
+}
+
+// ── RENDER ──
+function render(){
+  const app=document.getElementById('app');
+  if(loading&&!tasks.length){app.innerHTML='<div class="loading">⏳ Načítám...</div>';return;}
+  if(screen==='overdue'){app.innerHTML=renderOverdue();return;}
+  if(screen==='list'){app.innerHTML=renderList();return;}
+  if(screen==='add'){app.innerHTML=renderAdd();return;}
+  if(screen==='detail'){app.innerHTML=renderDetail();return;}
+}
+
+function renderNavBar(){
+  if(viewMode==='all'||viewMode==='cat')return'';
+  let label='';
+  if(viewMode==='day'){
+    const iT=isToday2(navDate);
+    label=iT?'Dnes 📅':navDate.toLocaleDateString('cs-CZ',{weekday:'long',day:'numeric',month:'long'});
+  } else if(viewMode==='week'){
+    const ws=getWeekStart(navDate),we=new Date(ws);
+    we.setDate(ws.getDate()+6);
+    label=ws.toLocaleDateString('cs-CZ',{day:'numeric',month:'short'})+' – '+we.toLocaleDateString('cs-CZ',{day:'numeric',month:'short'});
+  } else if(viewMode==='month'){
+    label=navDate.toLocaleDateString('cs-CZ',{month:'long',year:'numeric'});
+  }
+  const isCurrent=(viewMode==='day'&&isToday2(navDate))||(viewMode==='week'&&isToday2(new Date())&&inWeek(dateStr(new Date()),navDate))||(viewMode==='month'&&isToday2(new Date())&&inMonth(dateStr(new Date()),navDate));
+  return `
+  <div class="nav-bar">
+    <button class="nav-btn" onclick="navigatePrev()">‹</button>
+    <div style="flex:1;text-align:center">
+      <div class="nav-label">${label}</div>
+      ${!isCurrent?`<button class="nav-today" onclick="navDate=new Date();render()">Zpět na aktuální</button>`:''}
+    </div>
+    <button class="nav-btn" onclick="navigateNext()">›</button>
+  </div>`;
+}
+
+function renderList(){
+  const list=filtered();
+  const today=dateStr(new Date());
+  const todayN=tasks.filter(t=>t.status!=='done'&&(t.dueDate===today||t.deadline===today)).length;
+  const activeN=tasks.filter(t=>t.status!=='done').length;
+  const shownN=list.filter(t=>t.status!=='done').length;
+  const viewLabels={day:'Den',week:'Týden',month:'Měsíc',cat:'Kategorie',all:'Vše'};
+  const statLabel=viewMode==='all'?\`<span class="active-n">\${activeN} aktivních</span>\`:
+    viewMode==='day'&&shownN===0&&isToday2(navDate)?'<span style="color:#44dd66">Dnes nic neplánováno 🎉</span>':
+    \`<span class="active-n">\${shownN} \${viewLabels[viewMode]||''}</span>\${viewMode!=='all'&&todayN>0&&!isToday2(navDate)?'<span style="color:#7070a0;font-size:15px"> · dnes '+todayN+'</span>':''}\`;
+
+  const cards=list.length===0
+    ?`<div class="empty"><div style="font-size:42px;margin-bottom:12px">📋</div><div style="color:#444;font-size:17px">Žádné úkoly</div><div style="font-size:14px;color:#2a2a3a;margin-top:6px">Ťukni + pro přidání</div></div>`
+    :list.map(t=>{
+      const col=PC[pc(t.priority)];
+      const td=dateStr(new Date());
+      const overdue=(t.deadline&&t.deadline<td&&t.status!=='done')||(t.dueDate&&t.dueDate<td&&t.dueDate!==td&&t.status!=='done');
+      const date=t.deadline||t.dueDate;
+      const kats=[t.kat1,t.kat2,t.kat3].filter(Boolean).join(' · ');
+      return `<div class="task" style="background:${t.status==='done'?'#0d0d0d':'#14141e'};border:1px solid ${overdue?'#6a1a1a':'#2a2a3e'};border-left:4px solid ${t.status==='done'?'#222':col};opacity:${t.status==='done'?.4:1}" onclick="openDetail('${t.id}')">
+        <div class="task-row">
+          <div style="flex:1;min-width:0">
+            ${kats?`<div class="task-kats">${esc(kats)}</div>`:''}
+            <div class="task-title" style="color:${t.status==='done'?'#555':'#fff'};text-decoration:${t.status==='done'?'line-through':'none'}">${t.type==='mine'?'🔵':'🟡'} ${esc(t.title)}</div>
+            <div class="task-tags">
+              <span class="tag" style="color:${col};background:${col}20">P${t.priority}</span>
+              <span class="tag" style="color:#666;background:#ffffff08">${ST[t.status]}</span>
+              ${date?`<span class="tag" style="color:${overdue?'#ff5555':'#888'};background:#ffffff08">📅 ${fmt(date)}</span>`:''}
+              ${t.estimatedHours?`<span class="tag" style="color:#888;background:#ffffff08">⏱ ${t.estimatedHours}h</span>`:''}
+            </div>
+          </div>
+          <button class="chk${t.status==='done'?' on':''}" onclick="quickStatus('${t.id}',event)">${t.status==='done'?'✓':''}</button>
+        </div>
+      </div>`;
+    }).join('');
+
+  // Search bar
+  const searchBar=`
+  <div class="search-bar">
+    <input class="search-inp" placeholder="🔍 Hledat..." value="${esc(searchText)}" oninput="onSearch(this.value)">
+    <button class="btn-ai-search${aiSearching?' searching':''}" onclick="doAiSearch()" ${aiSearching?'disabled':''}>
+      ${aiSearching?'⏳':'🧠 AI'}
+    </button>
+  </div>`;
+
+  // Cat filter
+  const catBar=viewMode==='cat'?`
+  <select class="cat-select" onchange="filterCat=this.value;render()">
+    <option value="">— Všechny kategorie —</option>
+    ${categories.map(c=>`<option value="${esc(c)}"${filterCat===c?' selected':''}>${esc(c)}</option>`).join('')}
+  </select>`:'';
+
+  return `
+  <div class="hdr">
+    <div class="hdr-top">
+      <div>
+        <div class="hdr-label">Správce úkolů</div>
+        <div class="hdr-stat">${statLabel}</div>
+      </div>
+      <button class="btn-sm${showDone?' on':''}" onclick="showDone=!showDone;render()">${showDone?'✓ Hotové':'Hotové'}</button>
+    </div>
+    <div class="tabs">
+      ${[['day','Den'],['week','Týden'],['month','Měsíc'],['cat','Kat.'],['all','Vše']].map(([v,l])=>`<button class="tab${viewMode===v?' on':''}" onclick="viewMode='${v}';aiSearchIds=null;render()">${l}</button>`).join('')}
+    </div>
+    ${renderNavBar()}
+    <div class="ftabs">
+      ${[['all','Všechny'],['mine','🔵 Moje'],['watch','🟡 Hlídám']].map(([f,l])=>`<button class="ftab${typeFilter===f?' on':''}" onclick="typeFilter='${f}';render()">${l}</button>`).join('')}
+    </div>
+  </div>
+  ${errMsg?`<div class="content"><div class="err">${esc(errMsg)}</div></div>`:''}
+  <div class="content">
+    ${searchBar}
+    ${catBar}
+    ${cards}
+  </div>
+  <button class="fab" onclick="openAdd()">+</button>`;
+}
+
+function renderAdd(){
+  let body='';
+  if(!draft&&!manual){
+    body=`
+    <div class="vbox">
+      <div class="vbox-title">🎙 Zadej úkol hlasem nebo textem</div>
+      <textarea class="vtextarea" placeholder="Napiš nebo nadiktuj přirozeně...&#10;&#10;Příklady:&#10;• Zavolat Novákovi do pátku ohledně smlouvy, priorita vysoká&#10;• Zkontrolovat jestli Martin odevzdal zprávu příští týden&#10;• Vyplnit docházku ihned, projekt ASR, deadline 25.5." oninput="voiceText=this.value">${esc(voiceText)}</textarea>
+      <div class="vhint">📱 <b>Mobil:</b> ťukni do pole → mikrofon 🎤 na klávesnici &nbsp;|&nbsp; 💻 <b>Win+H</b></div>
+      <button class="btn-analyze" onclick="doAnalyze()" ${parsing?'disabled':''}>${parsing?'⏳ Analyzuji...':'✨ Analyzovat AI'}</button>
+    </div>
+    ${errMsg?`<div class="err">${esc(errMsg)}</div>`:''}
+    <button class="btn-manual" onclick="openManual()">✏️ Zadat ručně bez AI</button>`;
+
+  } else if(dups.length>0&&draft){
+    body=`
+    <div class="dup-box">
+      <div style="font-size:14px;color:#ffaa00;margin-bottom:12px">⚠️ Podobný úkol již existuje:</div>
+      ${dups.map(d=>`<div class="dup-item">
+        <div class="overdue-title">${esc(d.title)}</div>
+        <div style="font-size:14px;color:#666;margin-bottom:10px">${ST[d.status]} · P${d.priority} · ${esc([d.kat1,d.kat2,d.kat3].filter(Boolean).join(', '))}</div>
+        <button class="btn-save" style="padding:10px 0;font-size:15px;width:100%" onclick="updateDup('${d.id}')">Aktualizovat tento úkol</button>
+      </div>`).join('')}
+      <button class="btn-cancel" style="width:100%;padding:10px 0;font-size:15px;margin-top:8px" onclick="dups=[];render()">Přidat jako nový úkol</button>
+    </div>`;
+  } else if(draft){
+    body=`
+    ${!manual?'<div class="ai-lbl">✨ AI NAVRHUJE — uprav pokud potřebuješ</div>':''}
+    ${errMsg?`<div class="err">${esc(errMsg)}</div>`:''}
+    ${formHTML('saveTask()','draft=null;dups=[];manual=false;voiceText="";errMsg="";render()')}`;
+  }
+
+  return `<div class="screen">
+    <div class="back-row">
+      <button class="back" onclick="screen='list';draft=null;voiceText='';manual=false;dups=[];errMsg='';render()">←</button>
+      <div class="screen-title">Nový úkol</div>
+    </div>
+    ${body}
+  </div>`;
+}
+
+function renderDetail(){
+  const task=tasks.find(t=>String(t.id)===String(sel));
+  if(!task){screen='list';render();return'';}
+  const col=PC[pc(task.priority)];
+
+  if(editMode&&draft){
+    return `<div class="screen">
+      <div class="back-row">
+        <button class="back" onclick="editMode=false;draft=null;errMsg='';render()">←</button>
+        <div class="screen-title">Upravit úkol</div>
+      </div>
+      ${errMsg?`<div class="err">${esc(errMsg)}</div>`:''}
+      ${formHTML('saveEdit()','editMode=false;draft=null;errMsg="";render()')}
+    </div>`;
+  }
+
+  const kats=[task.kat1,task.kat2,task.kat3].filter(Boolean);
+  const cells=[
+    ['Priorita',`${task.priority}/10`,col],
+    task.dueDate?['Termín',fmt(task.dueDate),'#b0b0c8']:null,
+    task.deadline?['Deadline',fmt(task.deadline),'#ff5555']:null,
+    task.estimatedHours?['Odh. čas',`${task.estimatedHours}h`,'#b0b0c8']:null,
+  ].filter(Boolean);
+
+  return `<div class="screen">
+    <div class="back-row between">
+      <button class="back" onclick="screen='list';voiceEditText='';errMsg='';render()">←</button>
+      <div style="display:flex;gap:8px">
+        <button style="background:#1a1a3e;border:1px solid #4a4a8e;color:#a0a0ff;border-radius:10px;padding:8px 16px;font-size:15px" onclick="draft={...tasks.find(t=>String(t.id)==='${task.id}')};editMode=true;render()">✏️ Upravit</button>
+        <button style="background:#200a0a;border:1px solid #6a1a1a;color:#ff7070;border-radius:10px;padding:8px 16px;font-size:15px" onclick="delTask('${task.id}')">🗑</button>
+      </div>
+    </div>
+    <div style="border-left:5px solid ${col};padding-left:18px;margin-bottom:18px">
+      ${kats.length?`<div style="font-size:14px;color:#7070a0;margin-bottom:5px">${kats.map(k=>`<span style="background:#1a1a2e;border:1px solid #2a2a4e;border-radius:6px;padding:2px 8px;margin-right:6px">${esc(k)}</span>`).join('')}</div>`:''}
+      <div style="font-size:22px;font-weight:700;margin-bottom:8px;line-height:1.3">${task.type==='mine'?'🔵':'🟡'} ${esc(task.title)}</div>
+      ${task.assignee?`<div style="font-size:15px;color:#ffaa00;margin-bottom:6px">👤 ${esc(task.assignee)}</div>`:''}
+      ${task.detail?`<div style="font-size:16px;color:#b0b0c8;line-height:1.6">${esc(task.detail)}</div>`:''}
+    </div>
+    <div class="status-row">
+      ${SK.map(k=>`<button class="sbtn${task.status===k?' on':''}" onclick="setStatus('${task.id}','${k}')">${ST[k]}</button>`).join('')}
+    </div>
+    <div class="dg">
+      ${cells.map(([l,v,c])=>`<div class="dcell"><div class="dcell-lbl">${l}</div><div class="dcell-val" style="color:${c}">${v}</div></div>`).join('')}
+    </div>
+    <div style="background:#0d0d1e;border:1px solid #2a2a4e;border-radius:14px;padding:16px">
+      <div style="font-size:12px;color:#7070a0;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">✏️ Hlasová / textová úprava</div>
+      <div style="font-size:14px;color:#444;margin-bottom:12px">Např: "přesuň na pátek", "změň prioritu na 9", "přidej do detailu: zavolat ráno"</div>
+      <textarea class="vtextarea" style="min-height:70px" placeholder="Napiš příkaz k úpravě..." oninput="voiceEditText=this.value">${esc(voiceEditText)}</textarea>
+      ${errMsg?`<div class="err" style="margin-top:10px">${esc(errMsg)}</div>`:''}
+      <button class="btn-analyze" style="margin-top:12px" onclick="doEditAnalyze('${task.id}')" ${parsing?'disabled':''}>${parsing?'⏳ Upravuji...':'✨ Aplikovat úpravu'}</button>
+    </div>
+  </div>`;
+}
+
+function renderOverdue(){
+  return `<div class="overdue-screen">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px">
+      <button class="back" onclick="screen='list';render()">←</button>
+      <div>
+        <div class="screen-title">⚠️ Nesplněné úkoly</div>
+        <div style="font-size:14px;color:#ffaa00;margin-top:3px">${overdueList.length} úkolů z minulých dní</div>
+      </div>
+    </div>
+    ${overdueList.map(t=>`
+    <div class="overdue-item">
+      <div class="overdue-title">${esc(t.title)}</div>
+      ${t.kat1?`<div style="font-size:14px;color:#7070a0;margin-bottom:8px">${esc([t.kat1,t.kat2,t.kat3].filter(Boolean).join(' · '))}</div>`:''}
+      <div style="font-size:14px;color:#ff5555;margin-bottom:12px">📅 Bylo na: ${fmt(t.dueDate)}</div>
+      <div class="overdue-btns">
+        <button class="obtn obtn-today" onclick="handleOverdue('${t.id}','today')">📋 Dnes</button>
+        <button class="obtn obtn-tom" onclick="handleOverdue('${t.id}','tomorrow')">📅 Zítra</button>
+        <button class="obtn obtn-wait" onclick="handleOverdue('${t.id}','wait')">⏳ Až budu mít čas</button>
+      </div>
+    </div>`).join('')}
+    <button class="btn-save" style="width:100%;margin-top:16px" onclick="screen='list';render()">Hotovo</button>
+  </div>`;
+}
+
+// ── SWIPE ──
+document.addEventListener('touchstart',e=>{
+  touchStartX=e.touches[0].clientX;
+  touchStartY=e.touches[0].clientY;
+},{passive:true});
+document.addEventListener('touchend',e=>{
+  if(screen!=='list')return;
+  if(viewMode==='all'||viewMode==='cat')return;
+  const dx=touchStartX-e.changedTouches[0].clientX;
+  const dy=touchStartY-e.changedTouches[0].clientY;
+  if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>70){
+    if(dx>0)navigateNext();else navigatePrev();
+  }
+},{passive:true});
+
+// ── START ──
+loadTasks();
+</script>
+</body>
+</html>
 /* ── HEADER ── */
 .hdr{padding:18px 16px 12px;border-bottom:1px solid #2a2a3e;position:sticky;top:0;background:#0a0a0f;z-index:10;}
 .hdr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
