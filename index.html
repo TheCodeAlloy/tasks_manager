@@ -437,7 +437,7 @@ async function saveTask(){
   loading=true; render();
   const r=await api('addTask',{task:draft});
   if(r.ok){
-    clearCache();await 
+    clearCache();await loadTasks();
     draft=null;dups=[];voiceText='';manual=false;errMsg='';screen='list';
     toast('✅ Uloženo: <b>'+esc(taskTitle)+'</b>');
   } else errMsg=r.error||'Chyba uložení';
@@ -448,7 +448,7 @@ async function saveEdit(){
   if(!draft||!draft.id)return;
   loading=true; render();
   const r=await api('updateTask',{task:draft});
-  if(r.ok){clearCache();await editMode=false;draft=null;errMsg='';toast('✅ Úkol upraven');}
+  if(r.ok){clearCache();await loadTasks();editMode=false;draft=null;errMsg='';toast('✅ Úkol upraven');}
   else errMsg=r.error||'Chyba';
   loading=false; render();
 }
@@ -457,7 +457,7 @@ async function updateDup(id){
   if(!draft)return;
   loading=true; render();
   const r=await api('updateTask',{task:{...draft,id}});
-  if(r.ok){clearCache();await draft=null;dups=[];voiceText='';screen='list';errMsg='';toast('✅ Existující úkol aktualizován');}
+  if(r.ok){clearCache();await loadTasks();draft=null;dups=[];voiceText='';screen='list';errMsg='';toast('✅ Existující úkol aktualizován');}
   else errMsg=r.error;
   loading=false; render();
 }
@@ -487,7 +487,7 @@ async function delTask(id){
   if(!confirm('Smazat úkol?'))return;
   loading=true; render();
   await api('deleteTask',{id});
-  clearCache();await 
+  clearCache();await loadTasks();
   screen='list';loading=false;render();
 }
 
@@ -514,7 +514,7 @@ async function doEditAnalyze(taskId){
   if(r.ok){
     const updated={...tasks.find(t=>String(t.id)===String(taskId)),...r.task,id:taskId};
     const upd=await api('updateTask',{task:updated});
-    if(upd.ok){clearCache();await voiceEditText='';sel=taskId;toast('✅ Úkol upraven');}
+    if(upd.ok){clearCache();await loadTasks();voiceEditText='';sel=taskId;toast('✅ Úkol upraven');}
     else errMsg=upd.error;
   } else errMsg=r.error;
   render();
