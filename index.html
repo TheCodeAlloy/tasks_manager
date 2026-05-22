@@ -559,7 +559,8 @@ function openAdd(){draft=null;voiceText='';manual=false;dups=[];errMsg='';screen
 
 // ── FORM HTML ──
 function catDatalist(id){
-  return `<datalist id="${id}">${categories.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>`;
+  const opts = categories.map(c=>'<option value="'+esc(c)+'">').join('');
+  return '<datalist id="'+id+'">'+opts+'</datalist>';
 }
 
 function formHTML(saveAction,cancelAction){
