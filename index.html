@@ -210,8 +210,11 @@ async function confirmSave(overrideId=null) {
   }
   if (r.ok) {
     await loadAll();
-    state.draft = null; state.dups = []; state.voiceText = ''; state.manual = false; state.screen = 'list';
-  } else { state.errMsg = r.error; }
+    state.draft = null; state.dups = []; state.voiceText = ''; state.manual = false; state.errMsg = ''; state.screen = 'list';
+  } else { 
+    state.errMsg = r.error;
+    state.loading = false;
+  }
   state.loading = false; render();
 }
 
@@ -323,11 +326,11 @@ function formHTML(saveLabel, cancelAction) {
     <input type="range" min="1" max="10" value="${d.priority||5}" style="width:100%;accent-color:${PC[pc(d.priority||5)]}" oninput="edDraft('priority',+this.value)">
   </div>
   <div class="grid2">
-    <div><div class="fld-lbl">TERMÍN</div><input type="date" class="inp" value="${d.dueDate||''}" oninput="edDraft('dueDate',this.value)"></div>
-    <div><div class="fld-lbl">DEADLINE</div><input type="date" class="inp" value="${d.deadline||''}" oninput="edDraft('deadline',this.value)"></div>
+    <div><div class="fld-lbl">TERMÍN</div><input type="date" class="inp" value="${d.dueDate||''}" onclick="this.showPicker&&this.showPicker()" onchange="edDraft('dueDate',this.value)"></div>
+    <div><div class="fld-lbl">DEADLINE</div><input type="date" class="inp" value="${d.deadline||''}" onclick="this.showPicker&&this.showPicker()" onchange="edDraft('deadline',this.value)"></div>
   </div>
   <div class="grid2" style="margin-bottom:16px">
-    <div><div class="fld-lbl">PŘIPOMENUTÍ</div><input type="date" class="inp" value="${d.reminderDate||''}" oninput="edDraft('reminderDate',this.value)"></div>
+    <div><div class="fld-lbl">PŘIPOMENUTÍ</div><input type="date" class="inp" value="${d.reminderDate||''}" onclick="this.showPicker&&this.showPicker()" onchange="edDraft('reminderDate',this.value)"></div>
     <div><div class="fld-lbl">ODH. ČAS (h)</div><input type="number" class="inp" min="0" step="0.5" value="${d.estimatedHours||''}" oninput="edDraft('estimatedHours',this.value)"></div>
   </div>
   <div class="fl">
