@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1e1e3f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Úkoly">
+<link rel="apple-touch-icon" href="icon.svg">
 <title>Správce úkolů</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -109,6 +115,10 @@ input,select,textarea{font-family:inherit;color-scheme:dark;font-size:17px;}
 
 /* Loading */
 .loading{text-align:center;padding:80px 20px;color:#333;font-size:16px;}
+/* Offline */
+.offline-bar{background:#3a1a00;border-bottom:1px solid #6a3a00;padding:8px 16px;font-size:13px;color:#ffaa00;text-align:center;position:sticky;top:0;z-index:20;}
+.offline-badge{display:inline-block;background:#3a1a00;border:1px solid #6a3a00;color:#ffaa00;font-size:12px;border-radius:6px;padding:1px 8px;margin-left:6px;}
+.pending-task{border-left-color:#ffaa00 !important;opacity:0.8;}
 
 /* Toast */
 #toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1a4a1a;border:1px solid #4a8a4a;color:#44dd66;padding:14px 22px;border-radius:14px;font-size:15px;font-weight:600;z-index:200;max-width:340px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.6);pointer-events:none;}
@@ -150,6 +160,8 @@ let voiceEditText='', errMsg='', loading=false;
 let searchText='', aiSearching=false, aiSearchIds=null, searchTimer=null;
 let overdueList=[], overdueShown=false;
 let toastTimer=null;
+let isOnline=navigator.onLine;
+const OFFLINE_Q = 'tm_offline_q';
 let touchStartX=0, touchStartY=0;
 
 // ── HELPERS ──
@@ -210,8 +222,49 @@ function saveCache(){
 }
 function clearCache(){try{localStorage.removeItem(CACHE_KEY);}catch{}}
 
+// ── OFFLINE QUEUE ──
+function getQueue(){try{return JSON.parse(localStorage.getItem(OFFLINE_Q)||'[]');}catch{return[];}}
+function addQueue(action,data){
+  const q=getQueue();
+  const localId='local_'+Date.now();
+  q.push({action,data,localId,ts:Date.now()});
+  localStorage.setItem(OFFLINE_Q,JSON.stringify(q));
+  return localId;
+}
+function clearQueue(){localStorage.removeItem(OFFLINE_Q);}
+
+async function syncQueue(){
+  const q=getQueue();
+  if(!q.length)return;
+  let synced=0;
+  for(const item of q){
+    try{
+      const r=await api(item.action,item.data);
+      if(r.ok) synced++;
+      else break;
+    }catch{break;}
+  }
+  if(synced>0){
+    const remaining=q.slice(synced);
+    localStorage.setItem(OFFLINE_Q,JSON.stringify(remaining));
+    // Reload tasks from server
+    const tr=await api('getTasks').catch(()=>null);
+    if(tr&&tr.ok){
+      tasks=(tr.tasks||[]).map(t=>({...t,estimatedHours:t.estimatedHours&&!String(t.estimatedHours).includes('T')&&!String(t.estimatedHours).includes('-')?t.estimatedHours:''}));
+      saveCache();
+    }
+    if(synced===q.length) toast('✅ '+synced+' úkolů synchronizováno');
+    render();
+  }
+}
+
+// Online/offline events
+window.addEventListener('online',()=>{isOnline=true;render();syncQueue();});
+window.addEventListener('offline',()=>{isOnline=false;render();});
+
 // ── API ──
 async function api(action, data={}){
+  if(!navigator.onLine) return{ok:false,error:'offline'};
   let url=API+'?action='+action;
   Object.keys(data).forEach(k=>{
     const v=data[k];
@@ -223,7 +276,10 @@ async function api(action, data={}){
     const text=await res.text();
     if(!text||text==='undefined')return{ok:false,error:'Prázdná odpověď'};
     return JSON.parse(text);
-  }catch(e){return{ok:false,error:e.message};}
+  }catch(e){
+    if(!navigator.onLine)return{ok:false,error:'offline'};
+    return{ok:false,error:e.message};
+  }
 }
 
 // ── LOAD ──
@@ -367,12 +423,23 @@ function filtered(){
 // ── TASK OPS ──
 async function saveTask(){
   if(!draft)return;
+  const taskTitle=draft.title||'Nový úkol';
+  if(!navigator.onLine){
+    // Offline — uložit lokálně
+    const localId=addQueue('addTask',{task:draft});
+    const offlineTask={...draft,id:localId,_offline:true};
+    tasks=[offlineTask,...tasks];
+    saveCache();
+    draft=null;dups=[];voiceText='';manual=false;errMsg='';screen='list';
+    toast('📴 Uloženo offline: <b>'+esc(taskTitle)+'</b><br><small>Synchronizuje se po připojení</small>',5000);
+    render();return;
+  }
   loading=true; render();
   const r=await api('addTask',{task:draft});
   if(r.ok){
-    clearCache();await loadTasks();
+    clearCache();await 
     draft=null;dups=[];voiceText='';manual=false;errMsg='';screen='list';
-    toast(`✅ Uloženo: <b>${esc(draft?.title||'Nový úkol')}</b>`);
+    toast('✅ Uloženo: <b>'+esc(taskTitle)+'</b>');
   } else errMsg=r.error||'Chyba uložení';
   loading=false; render();
 }
@@ -381,7 +448,7 @@ async function saveEdit(){
   if(!draft||!draft.id)return;
   loading=true; render();
   const r=await api('updateTask',{task:draft});
-  if(r.ok){clearCache();await loadTasks();editMode=false;draft=null;errMsg='';toast('✅ Úkol upraven');}
+  if(r.ok){clearCache();await editMode=false;draft=null;errMsg='';toast('✅ Úkol upraven');}
   else errMsg=r.error||'Chyba';
   loading=false; render();
 }
@@ -390,7 +457,7 @@ async function updateDup(id){
   if(!draft)return;
   loading=true; render();
   const r=await api('updateTask',{task:{...draft,id}});
-  if(r.ok){clearCache();await loadTasks();draft=null;dups=[];voiceText='';screen='list';errMsg='';toast('✅ Existující úkol aktualizován');}
+  if(r.ok){clearCache();await draft=null;dups=[];voiceText='';screen='list';errMsg='';toast('✅ Existující úkol aktualizován');}
   else errMsg=r.error;
   loading=false; render();
 }
@@ -420,7 +487,7 @@ async function delTask(id){
   if(!confirm('Smazat úkol?'))return;
   loading=true; render();
   await api('deleteTask',{id});
-  clearCache();await loadTasks();
+  clearCache();await 
   screen='list';loading=false;render();
 }
 
@@ -447,7 +514,7 @@ async function doEditAnalyze(taskId){
   if(r.ok){
     const updated={...tasks.find(t=>String(t.id)===String(taskId)),...r.task,id:taskId};
     const upd=await api('updateTask',{task:updated});
-    if(upd.ok){clearCache();await loadTasks();voiceEditText='';sel=taskId;toast('✅ Úkol upraven');}
+    if(upd.ok){clearCache();await voiceEditText='';sel=taskId;toast('✅ Úkol upraven');}
     else errMsg=upd.error;
   } else errMsg=r.error;
   render();
@@ -622,7 +689,7 @@ function renderList(){
         <div class="task-row">
           <div style="flex:1;min-width:0">
             ${kats?`<div class="task-kats">${esc(kats)}</div>`:''}
-            <div class="task-title" style="color:${t.status==='done'?'#555':'#fff'};text-decoration:${t.status==='done'?'line-through':'none'}">${t.type==='mine'?'🔵':'🟡'} ${esc(t.title)}</div>
+            <div class="task-title" style="color:${t.status==='done'?'#555':'#fff'};text-decoration:${t.status==='done'?'line-through':'none'}">${t.type==='mine'?'🔵':'🟡'} ${esc(t.title)}${t._offline?'<span class="offline-badge">📴 čeká</span>':''}</div>
             <div class="task-tags">
               <span class="tag" style="color:${col};background:${col}20">P${t.priority}</span>
               <span class="tag" style="color:#666;background:#ffffff08">${ST[t.status]}</span>
@@ -651,7 +718,8 @@ function renderList(){
     ${categories.map(c=>`<option value="${esc(c)}"${filterCat===c?' selected':''}>${esc(c)}</option>`).join('')}
   </select>`:'';
 
-  return `
+  const offlineBar=isOnline?'':'<div class="offline-bar">📴 Offline — data z cache, nové úkoly se uloží lokálně</div>';
+  return `${offlineBar}
   <div class="hdr">
     <div class="hdr-top">
       <div>
@@ -811,6 +879,17 @@ document.addEventListener('touchend',e=>{
 },{passive:true});
 
 // ── START ──
+
+// Service Worker registrace
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js')
+    .then(r=>console.log('SW registered'))
+    .catch(e=>console.log('SW error:',e));
+}
+
+// Sync pending offline tasks when online
+window.addEventListener('online',syncQueue);
+
 loadTasks();
 </script>
 </body>
