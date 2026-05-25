@@ -575,28 +575,41 @@ function renderList(){
 }
 
 function renderAdd(){
-  let body='';
-  if(!draft&&!manual){
-    body='<div class="vbox"><div class="vbox-title">🎙 Zadej úkol hlasem nebo textem</div>'+
-      '<textarea class="vtextarea" placeholder="Napiš nebo nadiktuj přirozeně...\n\nPříklady:\n• Zavolat Novákovi do pátku\n• Zkontrolovat zprávu od Martina příští týden\n• Vyplnit docházku ihned, ASR, deadline v sobotu" oninput="voiceText=this.value">'+esc(voiceText)+'</textarea>'+
-      '<div class="vhint">📱 <b>Mobil:</b> ťukni → mikrofon 🎤 &nbsp;|&nbsp; 💻 <b>Win+H</b></div>'+
-      '<button class="btn-analyze" onclick="doAnalyze()" '+(parsing?'disabled':'')+'>'+(parsing?'⏳ Analyzuji...':'✨ Analyzovat AI')+'</button></div>'+
-      (errMsg?'<div class="err">'+esc(errMsg)+'</div>':'')+
-      '<button class="btn-manual" onclick="openManual()">✏️ Zadat ručně bez AI</button>';
-  } else if(dups.length>0&&draft){
-    body='<div class="dup-box"><div style="font-size:14px;color:#ffaa00;margin-bottom:12px">⚠️ Podobný úkol již existuje:</div>'+
+  // Duplicita — nabídni výběr
+  if(dups.length>0&&draft){
+    return '<div class="screen"><div class="back-row">'+
+      '<button class="back" onclick="screen=\'list\';draft=null;voiceText=\'\';dups=[];errMsg=\'\';render()">← Zpět</button>'+
+      '<div class="screen-title">Nový úkol</div></div>'+
+      '<div class="dup-box"><div style="font-size:14px;color:#ffaa00;margin-bottom:12px">⚠️ Podobný úkol již existuje:</div>'+
       dups.map(d=>'<div class="dup-item"><div class="overdue-title">'+esc(d.title)+'</div>'+
         '<div style="font-size:14px;color:#666;margin-bottom:10px">'+ST[d.status]+' · P'+d.priority+'</div>'+
         '<button class="btn-save" style="padding:10px 0;font-size:15px;width:100%" onclick="updateDup(\''+d.id+'\')">Aktualizovat tento úkol</button></div>').join('')+
-      '<button class="btn-cancel" style="width:100%;padding:10px 0;font-size:15px;margin-top:8px" onclick="dups=[];render()">Přidat jako nový úkol</button></div>';
-  } else if(draft){
-    body=(!manual?'<div class="ai-lbl">✨ AI NAVRHUJE — uprav pokud potřebuješ</div>':'')+
-      (errMsg?'<div class="err">'+esc(errMsg)+'</div>':'')+
-      formHTML('saveTask()','draft=null;dups=[];manual=false;voiceText="";errMsg="";render()');
+      '<button class="btn-cancel" style="width:100%;padding:10px 0;font-size:15px;margin-top:8px" onclick="dups=[];render()">Přidat jako nový úkol</button></div></div>';
   }
+
+  if(!draft) draft={title:'',detail:'',kat1:'',kat2:'',kat3:'',type:'mine',priority:5,status:'todo',dueDate:'',deadline:'',reminderDate:'',estimatedHours:'',assignee:''};
+
+  // AI box vždy nahoře + formulář vždy dole
+  const aiBox='<div class="vbox" style="margin-bottom:20px">'+
+    '<div class="vbox-title">🧠 Rychlé zadání pomocí AI</div>'+
+    '<textarea id="ai-input" class="vtextarea" style="min-height:80px" placeholder="Napiš nebo nadiktuj úkol přirozeně...&#10;&#10;Např: Zavolat Novákovi do pátku, priorita vysoká&#10;Nebo: Zkontrolovat zprávu od Martina příští týden, projekt ASR" oninput="voiceText=this.value">'+esc(voiceText)+'</textarea>'+
+    '<div class="vhint">📱 <b>Mobil:</b> ťukni do pole → mikrofon 🎤 na klávesnici &nbsp;|&nbsp; 💻 <b>Win+H</b></div>'+
+    (errMsg?'<div class="err" style="margin-top:10px">'+esc(errMsg)+'</div>':'')+
+    '<button class="btn-analyze" onclick="doAnalyze()" '+(parsing?'disabled':'')+'>'+(parsing?'⏳ Analyzuji...':'✨ Analyzovat AI a předvyplnit formulář')+'</button>'+
+  '</div>';
+
+  const sep='<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">'+
+    '<div style="flex:1;height:1px;background:#32324e"></div>'+
+    '<div style="font-size:12px;color:#555;white-space:nowrap">nebo vyplň ručně</div>'+
+    '<div style="flex:1;height:1px;background:#32324e"></div>'+
+  '</div>';
+
   return '<div class="screen"><div class="back-row">'+
-    '<button class="back" onclick="screen=\'list\';draft=null;voiceText=\'\';manual=false;dups=[];errMsg=\'\';render()">← Zpět</button>'+
-    '<div class="screen-title">Nový úkol</div></div>'+body+'</div>';
+    '<button class="back" onclick="screen=\'list\';draft=null;voiceText=\'\';dups=[];errMsg=\'\';render()">← Zpět</button>'+
+    '<div class="screen-title">Nový úkol</div></div>'+
+    aiBox+sep+
+    formHTML('saveTask()','screen=\'list\';draft=null;voiceText=\'\';dups=[];errMsg=\'\';render()')+
+  '</div>';
 }
 
 function renderDetail(){
