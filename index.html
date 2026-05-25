@@ -364,8 +364,13 @@ async function doAnalyze(){
   parsing=true;errMsg='';render();
   const r=await api('analyze',{text:voiceText});
   parsing=false;
-  if(r.ok){const p=r.task;dups=(p.duplicateIds||[]).map(id=>tasks.find(t=>String(t.id)===String(id))).filter(Boolean);draft={...p,duplicateIds:undefined};errMsg='';}
-  else errMsg=r.error||'Chyba AI';
+  if(r.ok){
+    const p=r.task;
+    dups=(p.duplicateIds||[]).map(id=>tasks.find(t=>String(t.id)===String(id))).filter(Boolean);
+    // Merge AI výsledku do existujícího draftu (zachová ručně zadané hodnoty kde AI nic nenašla)
+    draft={...draft,...p,duplicateIds:undefined};
+    errMsg='';
+  } else errMsg=r.error||'Chyba AI';
   render();
 }
 
@@ -421,7 +426,7 @@ function ed(f,v){
 }
 function openManual(){manual=true;draft={title:'',detail:'',kat1:'',kat2:'',kat3:'',type:'mine',priority:5,status:'todo',dueDate:'',deadline:'',reminderDate:'',estimatedHours:'',assignee:''};render();}
 function openDetail(id){sel=id;screen='detail';voiceEditText='';errMsg='';render();}
-function openAdd(){draft=null;voiceText='';manual=false;dups=[];errMsg='';screen='add';render();}
+function openAdd(){draft={title:'',detail:'',kat1:'',kat2:'',kat3:'',type:'mine',priority:5,status:'todo',dueDate:'',deadline:'',reminderDate:'',estimatedHours:'',assignee:''};voiceText='';dups=[];errMsg='';screen='add';render();}
 function openEdit(id){
   const t=tasks.find(x=>String(x.id)===String(id));if(!t)return;
   sel=id;draft={...t};editMode=true;voiceEditText='';errMsg='';screen='detail';render();
